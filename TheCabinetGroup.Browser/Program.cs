@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Browser;
 using TheCabinetGroup;
 
+[assembly: SupportedOSPlatform("browser")]
 internal sealed partial class Program
 {
     private static Task Main(string[] args) => BuildAvaloniaApp()
@@ -11,5 +12,6 @@ internal sealed partial class Program
         .StartBrowserAppAsync("out");
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>();
+        => AppBuilder.Configure<App>()
+                     .UseSkia();
 }
