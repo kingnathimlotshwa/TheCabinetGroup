@@ -6,10 +6,6 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<WasmEnableThreads>true</WasmEnableThreads>
-	</PropertyGroup>
-	
 	<ItemGroup>
 		<PackageReference Include="Avalonia.Browser"/>
 	</ItemGroup>
