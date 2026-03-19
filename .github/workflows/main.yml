@@ -1,0 +1,235 @@
+# ============================================================
+#  TheCabinetGroup — Publish Workflow
+#  Triggers: push to main, or manually via workflow_dispatch
+#
+#  Required GitHub Secrets (Settings → Secrets → Actions):
+#  ─────────────────────────────────────────────────────────
+#  APPWRITE_PROJECT_ID      Your Appwrite project ID
+#  APPWRITE_DATABASE_ID     Your Appwrite database ID
+#  APPWRITE_BUCKET_ID       Your Appwrite storage bucket ID
+#
+#  Android signing:
+#  ANDROID_KEYSTORE_BASE64  Base64-encoded .jks keystore file
+#                           Generate: keytool -genkey -v -keystore release.jks
+#                           Encode:   base64 -w 0 release.jks
+#  ANDROID_KEYSTORE_PASS    Keystore password
+#  ANDROID_KEY_ALIAS        Key alias inside the keystore
+#  ANDROID_KEY_PASS         Key password
+# ============================================================
+
+name: Publish
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────
+  #  DESKTOP  (Windows · Linux · macOS)
+  # ──────────────────────────────────────────────────────────
+  desktop:
+    name: Desktop / ${{ matrix.os-label }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            os-label: Windows
+            rid: win-x64
+            artifact: desktop-windows
+          - runner: ubuntu-latest
+            os-label: Linux
+            rid: linux-x64
+            artifact: desktop-linux
+          - runner: macos-latest
+            os-label: macOS
+            rid: osx-x64
+            artifact: desktop-macos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Write appsettings.json
+        shell: bash
+        run: |
+          cat > TheCabinetGroup/Configurations/appsettings.json << EOF
+          {
+            "Appwrite": {
+              "Endpoint": "https://cloud.appwrite.io/v1",
+              "ProjectId": "${{ secrets.APPWRITE_PROJECT_ID }}",
+              "DatabaseId": "${{ secrets.APPWRITE_DATABASE_ID }}",
+              "BucketId":   "${{ secrets.APPWRITE_BUCKET_ID }}",
+              "Collections": {
+                "Members":       "members",
+                "Contributions": "contributions",
+                "Payments":      "payments",
+                "Penalties":     "penalties",
+                "Settings":      "stokvel_settings"
+              }
+            }
+          }
+          EOF
+
+      - name: Publish Desktop
+        run: >
+          dotnet publish TheCabinetGroup.Desktop/TheCabinetGroup.Desktop.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/desktop
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: publish/desktop/
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  #  ANDROID  (signed APK)
+  # ──────────────────────────────────────────────────────────
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Setup Java (required by Android SDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Write appsettings.json
+        run: |
+          cat > TheCabinetGroup/Configurations/appsettings.json << EOF
+          {
+            "Appwrite": {
+              "Endpoint": "https://cloud.appwrite.io/v1",
+              "ProjectId": "${{ secrets.APPWRITE_PROJECT_ID }}",
+              "DatabaseId": "${{ secrets.APPWRITE_DATABASE_ID }}",
+              "BucketId":   "${{ secrets.APPWRITE_BUCKET_ID }}",
+              "Collections": {
+                "Members":       "members",
+                "Contributions": "contributions",
+                "Payments":      "payments",
+                "Penalties":     "penalties",
+                "Settings":      "stokvel_settings"
+              }
+            }
+          }
+          EOF
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.jks
+
+      - name: Publish Android APK
+        run: >
+          dotnet publish TheCabinetGroup.Android/TheCabinetGroup.Android.csproj
+          -c Release
+          -p:AndroidSigningKeyStore=${{ github.workspace }}/release.jks
+          -p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          -p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASS }}
+          -p:AndroidSigningStorePass=${{ secrets.ANDROID_KEYSTORE_PASS }}
+          -o publish/android
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: publish/android/*.apk
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  #  BROWSER  (WASM → GitHub Pages)
+  # ──────────────────────────────────────────────────────────
+  browser:
+    name: Browser (WASM)
+    runs-on: ubuntu-latest
+
+    # Allow the job to write to GitHub Pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install WASM workload
+        run: dotnet workload install wasm-tools
+
+      - name: Write appsettings.json
+        run: |
+          cat > TheCabinetGroup/Configurations/appsettings.json << EOF
+          {
+            "Appwrite": {
+              "Endpoint": "https://cloud.appwrite.io/v1",
+              "ProjectId": "${{ secrets.APPWRITE_PROJECT_ID }}",
+              "DatabaseId": "${{ secrets.APPWRITE_DATABASE_ID }}",
+              "BucketId":   "${{ secrets.APPWRITE_BUCKET_ID }}",
+              "Collections": {
+                "Members":       "members",
+                "Contributions": "contributions",
+                "Payments":      "payments",
+                "Penalties":     "penalties",
+                "Settings":      "stokvel_settings"
+              }
+            }
+          }
+          EOF
+
+      - name: Publish Browser (WASM)
+        run: >
+          dotnet publish TheCabinetGroup.Browser/TheCabinetGroup.Browser.csproj
+          -c Release
+          -o publish/browser
+
+      - name: Fix asset paths for GitHub Pages subfolder
+        # GitHub Pages serves from /TheCabinetGroup/ — patch the base href so
+        # the WASM app finds its assets correctly.
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          sed -i "s|<base href=\"/\"|<base href=\"/${REPO_NAME}/\"|g" \
+            publish/browser/wwwroot/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/browser/wwwroot
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
