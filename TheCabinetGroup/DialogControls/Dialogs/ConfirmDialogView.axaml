@@ -1,0 +1,53 @@
+﻿<UserControl
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.DialogControls.Dialogs.ConfirmDialogView"
+    x:DataType="vm:ConfirmDialogViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="clr-namespace:TheCabinetGroup.DialogControls.DialogModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <shadUi:Card>
+        <StackPanel Spacing="16">
+
+            <!--  Title  -->
+            <TextBlock Classes="h4" Text="{Binding Title}" />
+
+            <!--  Message  -->
+            <TextBlock
+                Classes="p"
+                Text="{Binding Message}"
+                TextWrapping="Wrap" />
+
+            <!--  Actions  -->
+            <StackPanel
+                HorizontalAlignment="Right"
+                Orientation="Horizontal"
+                Spacing="8">
+
+                <!--  Cancel — passes False back as result  -->
+                <Button
+                    Classes="Outline"
+                    Command="{Binding RelativeSource={RelativeSource AncestorType=dialogHost:DialogHost}, Path=CloseDialogCommand}"
+                    CommandParameter="{x:Null}"
+                    Content="Cancel" />
+
+                <!--  Confirm — passes True back as result  -->
+                <Button
+                    Classes="Primary"
+                    Command="{Binding RelativeSource={RelativeSource AncestorType=dialogHost:DialogHost}, Path=CloseDialogCommand}"
+                    CommandParameter="{StaticResource TrueValue}"
+                    Content="Confirm" />
+
+            </StackPanel>
+        </StackPanel>
+    </shadUi:Card>
+    <UserControl.Resources>
+        <x:Boolean x:Key="TrueValue">True</x:Boolean>
+    </UserControl.Resources>
+</UserControl>

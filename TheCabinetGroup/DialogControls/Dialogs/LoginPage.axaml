@@ -1,0 +1,294 @@
+﻿<UserControl
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.DialogControls.Dialogs.LoginPage"
+    x:DataType="vm:AuthViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:converters="clr-namespace:TheCabinetGroup.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="clr-namespace:TheCabinetGroup.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.DataContext>
+        <vm:AuthViewModel />
+    </Design.DataContext>
+
+    <shadUi:Card Background="{DynamicResource WindowBackgroundColor}">
+        <Panel>
+            <!--  ══════════════════════ LOGIN ══════════════════════  -->
+            <StackPanel
+                IsVisible="{Binding CurrentView, Converter={StaticResource StringEq}, ConverterParameter=Login}"
+                Margin="24"
+                Spacing="16"
+                Width="275">
+                <Viewbox MaxHeight="100" MaxWidth="150">
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                </Viewbox>
+                <TextBlock
+                    Classes="h4"
+                    HorizontalAlignment="Center"
+                    Text="Welcome Back!" />
+                <TextBlock
+                    Classes="Caption"
+                    HorizontalAlignment="Center"
+                    Text="Sign in to view more information" />
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding LoginEmail, Mode=TwoWay}"
+                    Watermark="user@example.com"
+                    shadUi:ControlAssist.Label="Email"
+                    shadUi:ElementAssist.FocusOnLoad="True" />
+                <TextBox
+                    Classes="PasswordReveal"
+                    PasswordChar="•"
+                    Text="{Binding LoginPassword, Mode=TwoWay}"
+                    Watermark="Enter password"
+                    shadUi:ControlAssist.Label="Password" />
+                <StackPanel Orientation="Horizontal" Spacing="30">
+                    <!--  Forgot password link  -->
+                    <Button
+                        Classes="Link"
+                        Command="{Binding ShowForgotPasswordCommand}"
+                        Content="Forgot password?"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,16" />
+
+                    <!--  Remember me  -->
+                    <CheckBox
+                        Content="Remember Me"
+                        HorizontalAlignment="Right"
+                        IsChecked="{Binding RememberMe, Mode=TwoWay}"
+                        Margin="0,0,0,16" />
+                </StackPanel>
+                <StackPanel Margin="0,24,0,0" Spacing="16">
+                    <Button
+                        Classes="Primary"
+                        Command="{Binding LoginWithEmailCommand}"
+                        Content="Sign In"
+                        HotKey="Enter">
+                        <shadUi:ButtonAssist.Icon>
+                            <LucideIcon Kind="Key" />
+                        </shadUi:ButtonAssist.Icon>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="5"
+                    VerticalAlignment="Bottom">
+                    <TextBlock Classes="Caption" Text="Don't have an account?" />
+                    <Button
+                        Classes="Link"
+                        Command="{Binding ShowRegisterCommand}"
+                        Content="Sign up" />
+                </StackPanel>
+            </StackPanel>
+
+            <!--  ══════════════════ FORGOT PASSWORD ══════════════════  -->
+            <StackPanel
+                IsVisible="{Binding CurrentView, Converter={StaticResource StringEq}, ConverterParameter=ForgotPassword}"
+                Margin="28"
+                Spacing="16"
+                Width="275">
+
+                <!--  Header  -->
+                <Viewbox MaxHeight="100" MaxWidth="150">
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                </Viewbox>
+
+                <TextBlock
+                    Classes="h4"
+                    HorizontalAlignment="Center"
+                    Text="Forgot Password?" />
+                <TextBlock
+                    Classes="Caption"
+                    HorizontalAlignment="Center"
+                    IsVisible="{Binding !RecoveryEmailSent}"
+                    Text="Enter your email and we'll send instructions on how to reset your password"
+                    TextWrapping="Wrap" />
+
+                <!--  Success banner  -->
+                <Border
+                    Background="{DynamicResource SuccessMutedColor}"
+                    CornerRadius="6"
+                    IsVisible="{Binding RecoveryEmailSent}"
+                    Margin="0,0,0,16"
+                    Padding="12,8">
+                    <StackPanel Spacing="2">
+                        <TextBlock
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SuccessColor}"
+                            Text="Check your inbox" />
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{DynamicResource SuccessColor}"
+                            Text="{Binding ForgotEmail, StringFormat='A reset link was sent to {0}.'}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Email field — hidden once email is sent  -->
+                <TextBox
+                    Classes="Clearable"
+                    IsVisible="{Binding !RecoveryEmailSent}"
+                    Margin="0,0,0,24"
+                    Text="{Binding ForgotEmail, Mode=TwoWay}"
+                    Watermark="user@example.com"
+                    shadUi:ControlAssist.Label="Email"
+                    shadUi:ElementAssist.FocusOnLoad="True" />
+
+                <!--  Send link button — hidden once sent  -->
+                <Button
+                    Classes="Primary"
+                    Command="{Binding SendRecoveryEmailCommand}"
+                    Content="Send reset link"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    IsEnabled="{Binding !IsBusy}"
+                    IsVisible="{Binding !RecoveryEmailSent}"
+                    shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}">
+                    <shadUi:ButtonAssist.Icon>
+                        <LucideIcon Kind="LockKeyholeOpen" />
+                    </shadUi:ButtonAssist.Icon>
+                </Button>
+
+                <!--  Back to login  -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="5"
+                    VerticalAlignment="Bottom">
+                    <TextBlock Classes="Caption" Text="Already have an account?" />
+                    <Button
+                        Classes="Link"
+                        Command="{Binding ShowLoginCommand}"
+                        Content="Sign in" />
+                </StackPanel>
+            </StackPanel>
+
+            <!--  ══════════════════ REGISTER AN ACCOUNT ══════════════════  -->
+            <StackPanel
+                IsVisible="{Binding CurrentView, Converter={StaticResource StringEq}, ConverterParameter=Register}"
+                Margin="28"
+                Spacing="12"
+                Width="275">
+
+                <!--  Header  -->
+
+                <Viewbox MaxHeight="100" MaxWidth="150">
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                </Viewbox>
+                <TextBlock
+                    Classes="h4"
+                    HorizontalAlignment="Center"
+                    Text="Create account" />
+                <TextBlock
+                    Classes="Caption"
+                    HorizontalAlignment="Center"
+                    Text="Join The Cabinet Group" />
+
+                <!--  Full name  -->
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding RegFullName, Mode=TwoWay}"
+                    Watermark="Jane Doe"
+                    shadUi:ControlAssist.Label="Full name"
+                    shadUi:ElementAssist.FocusOnLoad="True" />
+
+                <!--  Email  -->
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding RegEmail, Mode=TwoWay}"
+                    Watermark="jane@example.com"
+                    shadUi:ControlAssist.Label="Email" />
+
+                <!--  Phone (optional)  -->
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding RegPhone, Mode=TwoWay}"
+                    Watermark="+27 XX XXX XXXX"
+                    shadUi:ControlAssist.Label="Phone (optional)" />
+
+                <!--  ID number  -->
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding RegIdNumber, Mode=TwoWay}"
+                    Watermark="XXXXXXXXXXXXXX"
+                    shadUi:ControlAssist.Label="ID number" />
+
+                <!--  Bank name  -->
+                <ComboBox
+                    DisplayMemberBinding="{Binding BankName}"
+                    ItemsSource="{Binding RegBanks}"
+                    SelectedItem="{Binding RegBank}"
+                    shadUi:ControlAssist.Hint="{Binding RegBank.NationalBranchCode}"
+                    shadUi:ControlAssist.Label="Select Your Bank"
+                    x:Name="Bank" />
+
+                <!--  Bank account  -->
+                <TextBox
+                    Classes="Clearable"
+                    Text="{Binding RegBankAccount, Mode=TwoWay}"
+                    Watermark="Account number"
+                    shadUi:ControlAssist.Label="Bank account" />
+
+                <!--  Password  -->
+                <TextBox
+                    Classes="PasswordReveal"
+                    PasswordChar="•"
+                    Text="{Binding RegPassword, Mode=TwoWay}"
+                    Watermark="Min 8 characters"
+                    shadUi:ControlAssist.Label="Password" />
+
+                <!--  Confirm password  -->
+                <TextBox
+                    Classes="PasswordReveal"
+                    Margin="0,0,0,24"
+                    PasswordChar="•"
+                    Text="{Binding RegConfirmPassword, Mode=TwoWay}"
+                    Watermark="Repeat password"
+                    shadUi:ControlAssist.Label="Confirm password" />
+
+                <!--  Register button  -->
+                <Button
+                    Classes="Primary"
+                    Command="{Binding RegisterCommand}"
+                    Content="Create account"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    IsEnabled="{Binding !IsBusy}"
+                    shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}">
+                    <shadUi:ButtonAssist.Icon>
+                        <LucideIcon Kind="UserPlus" />
+                    </shadUi:ButtonAssist.Icon>
+                </Button>
+
+                <!--  Back to login  -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="4">
+                    <TextBlock
+                        Classes="muted"
+                        FontSize="13"
+                        Text="Already have an account?"
+                        VerticalAlignment="Center" />
+                    <Button
+                        Classes="Link"
+                        Command="{Binding ShowLoginCommand}"
+                        Content="Sign in"
+                        FontSize="13" />
+                </StackPanel>
+
+            </StackPanel>
+        </Panel>
+    </shadUi:Card>
+    <UserControl.Resources>
+        <x:Boolean x:Key="TrueValue">True</x:Boolean>
+        <converters:StringEqualityConverter x:Key="StringEq" />
+    </UserControl.Resources>
+</UserControl>

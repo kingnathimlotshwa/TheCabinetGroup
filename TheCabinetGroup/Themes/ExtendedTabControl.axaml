@@ -1,0 +1,100 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ControlTheme
+        BasedOn="{StaticResource {x:Type TabControl}}"
+        TargetType="TabControl"
+        x:Key="ExtendedTabControl">
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+                    <DockPanel>
+                        <Border
+                            Background="{DynamicResource BorderColor30}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            DockPanel.Dock="{TemplateBinding TabStripPlacement}">
+                            <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" Name="PART_ItemsPresenter" />
+                        </Border>
+                        <ContentPresenter
+                            Content="{TemplateBinding SelectedContent}"
+                            ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            Margin="{TemplateBinding Padding}"
+                            Name="PART_SelectedContentHost"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^[TabStripPlacement=Top]">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border
+                                Background="{DynamicResource BorderColor30}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Grid.Row="0"
+                                HorizontalAlignment="Center">
+                                <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" Name="PART_ItemsPresenter" />
+                            </Border>
+                            <ContentPresenter
+                                Content="{TemplateBinding SelectedContent}"
+                                ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                Grid.Row="1"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                Margin="{TemplateBinding Padding}"
+                                Name="PART_SelectedContentHost"
+                                VerticalAlignment="Stretch"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="^[TabStripPlacement=Bottom]">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid RowDefinitions="*,Auto">
+                            <ContentPresenter
+                                Content="{TemplateBinding SelectedContent}"
+                                ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                Grid.Row="0"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                Margin="{TemplateBinding Padding}"
+                                Name="PART_SelectedContentHost"
+                                VerticalAlignment="Stretch"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            <Border
+                                Background="{DynamicResource BorderColor30}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Grid.Row="1"
+                                HorizontalAlignment="Center">
+                                <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" Name="PART_ItemsPresenter" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+    </ControlTheme>
+
+</ResourceDictionary>

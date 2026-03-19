@@ -1,0 +1,117 @@
+<UserControl
+    Background="{DynamicResource WindowBackgroundColor}"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.Views.MainView"
+    x:DataType="vm:MainViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="using:TheCabinetGroup.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Interaction.Behaviors>
+        <EventTriggerBehavior EventName="Loaded">
+            <InvokeCommandAction Command="{Binding CheckAuthCommand}" />
+        </EventTriggerBehavior>
+    </Interaction.Behaviors>
+    <Panel>
+        <dialogHost:DialogHost CloseOnClickAway="False" Identifier="LoginDialogHost">
+            <dialogHost:DialogHost CloseOnClickAway="True" Identifier="MainDialogHost">
+
+                <TabControl
+                    CornerRadius="7"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Margin="5,15,5,15"
+                    TabStripPlacement="{OnFormFactor Mobile=Bottom,
+                                                     Desktop=Top}"
+                    Theme="{StaticResource ExtendedTabControl}">
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="House" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="Dashboard"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <!-- <StackPanel> -->
+                        <!--  <Button  -->
+                        <!--  Classes="Icon"  -->
+                        <!--  Command="{Binding ShowToastCommand}"  -->
+                        <!--  Content="{LucideIconContent Command}" />  -->
+                        <!--  <Button  -->
+                        <!--  Classes="Icon"  -->
+                        <!--  Command="{Binding ShowConfirmDialogCommand}"  -->
+                        <!--  Content="{LucideIconContent Popcorn}" />  -->
+                        <!-- </StackPanel> -->
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="Users" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="Members"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="Wallet" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="Contributions"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="ChartNoAxesCombined" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="Payouts"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="History" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="History"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                    </TabItem>
+                </TabControl>
+
+            </dialogHost:DialogHost>
+        </dialogHost:DialogHost>
+        <shadUi:ToastHost
+            Manager="{Binding ToastManager}"
+            MaxToasts="3"
+            Position="{OnFormFactor Desktop=BottomRight,
+                                    Mobile=TopCenter}" />
+    </Panel>
+</UserControl>

@@ -1,0 +1,17 @@
+<shadUi:Window
+    Icon="/Assets/avalonia-logo.ico"
+    Title="The Cabinet Group"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.Views.MainWindow"
+    x:DataType="vm:MainViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:views="using:TheCabinetGroup.Views"
+    xmlns:vm="clr-namespace:TheCabinetGroup.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <views:MainView />
+</shadUi:Window>

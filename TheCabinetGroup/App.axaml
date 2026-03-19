@@ -1,0 +1,26 @@
+<Application
+    RequestedThemeVariant="Dark"
+    x:Class="TheCabinetGroup.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+    xmlns:local="using:TheCabinetGroup"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="Themes/ExtendedTabControl.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+    <Application.Styles>
+        <shadUi:ShadTheme />
+        <Style Selector=":is(TopLevel)">
+            <Setter Property="FontFamily" Value="avares://TheCabinetGroup/Assets/Fonts#Figtree" />
+        </Style>
+        <dialogHostAvalonia:DialogHostStyles />
+    </Application.Styles>
+</Application>
