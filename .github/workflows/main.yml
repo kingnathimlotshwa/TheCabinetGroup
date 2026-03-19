@@ -1,8 +1,10 @@
 # ============================================================
 #  TheCabinetGroup — Publish & Release Workflow
 #
-#  Trigger:
-#    git tag v1.0.0 && git push origin v1.0.0
+#  Triggers:
+#    • Tag push:   git tag v1.0.0 && git push origin v1.0.0
+#    • Manual:     Actions tab → "Publish" → Run workflow
+#                  (enter version as "1.0.0" — no v prefix)
 #
 #  What it does:
 #    • Builds Windows / Linux / macOS self-contained executables
@@ -29,6 +31,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.0.0 — no v prefix)'
+        required: true
+        default: '1.0.0'
 
 permissions:
   contents: write
@@ -71,9 +79,12 @@ jobs:
         id: version
         shell: bash
         run: |
-          # Strip leading "v" — NuGet requires "1.0.0" not "v1.0.0"
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
           echo "value=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Setup .NET
@@ -146,8 +157,12 @@ jobs:
       - name: Set version
         id: version
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
           echo "value=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Setup .NET
@@ -284,6 +299,23 @@ jobs:
     needs: [ desktop, android ]   # browser deploys to Pages independently
 
     steps:
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "value=${VERSION}" >> $GITHUB_OUTPUT
+          # Tag name includes v prefix for the release, strip for version number
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download desktop artifacts
         uses: actions/download-artifact@v4
         with:
@@ -311,8 +343,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "The Cabinet Group ${{ github.ref_name }}"
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "The Cabinet Group ${{ steps.version.outputs.tag }}"
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -328,5 +360,5 @@ jobs:
             | 🪟 Windows | `TheCabinetGroup-windows-x64.zip` |
             | 🐧 Linux   | `TheCabinetGroup-linux-x64.zip` |
             | 🍎 macOS   | `TheCabinetGroup-macos-x64.zip` |
-            | 🤖 Android | `TheCabinetGroup-${{ github.ref_name }}.apk` |
+            | 🤖 Android | `TheCabinetGroup-${{ steps.version.outputs.value }}.apk` |
             | 🌐 Browser | ${{ github.server_url }}/${{ github.repository }}/deployments |
