@@ -67,6 +67,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          # Strip leading "v" — NuGet requires "1.0.0" not "v1.0.0"
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "value=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -102,7 +111,7 @@ jobs:
           --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version="${{ github.ref_name }}"
+          -p:Version="${{ steps.version.outputs.value }}"
           -o publish/desktop
 
       - name: Zip output (Linux / macOS)
@@ -133,6 +142,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "value=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -176,7 +192,7 @@ jobs:
           dotnet publish TheCabinetGroup.Android/TheCabinetGroup.Android.csproj
           -c Release
           -p:ApplicationVersion=${{ github.run_number }}
-          -p:ApplicationDisplayVersion="${{ github.ref_name }}"
+          -p:ApplicationDisplayVersion="${{ steps.version.outputs.value }}"
           -p:AndroidSigningKeyStore=${{ github.workspace }}/release.jks
           -p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           -p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASS }}
@@ -185,14 +201,15 @@ jobs:
 
       - name: Rename APK with version
         run: |
-          mv publish/android/*.apk \
-             publish/android/TheCabinetGroup-${{ github.ref_name }}.apk
+          # Find whatever APK dotnet produced and rename it consistently
+          APK=$(find publish/android -name "*.apk" | head -1)
+          mv "$APK" "publish/android/TheCabinetGroup-${{ steps.version.outputs.value }}.apk"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: publish/android/TheCabinetGroup-${{ github.ref_name }}.apk
+          path: publish/android/TheCabinetGroup-${{ steps.version.outputs.value }}.apk
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────
