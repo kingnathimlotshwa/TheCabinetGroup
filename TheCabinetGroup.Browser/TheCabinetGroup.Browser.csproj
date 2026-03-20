@@ -9,6 +9,18 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Avalonia.Browser"/>
+		<!--
+	Explicitly pin SkiaSharp WASM native assets.
+	CPM (Directory.Packages.props) does not correctly resolve
+	these transitive WASM assets. VersionOverride bypasses CPM
+	so the correct .wasm binaries are included in the publish output.
+-->
+		<PackageReference Include="SkiaSharp.NativeAssets.WebAssembly"
+		                  VersionOverride="2.88.9"
+		                  ExcludeAssets="none" />
+		<PackageReference Include="HarfBuzzSharp.NativeAssets.WebAssembly"
+		                  VersionOverride="8.3.1.3"
+		                  ExcludeAssets="none" />
 	</ItemGroup>
 	
 	<ItemGroup>
