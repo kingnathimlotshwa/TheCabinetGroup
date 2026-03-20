@@ -4,7 +4,8 @@
 		<OutputType>Exe</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>enable</Nullable>
-		<WasmEnableThreads>true</WasmEnableThreads>
+		<!-- WasmBuildNative compiles SkiaSharp natively for WASM -->
+		<WasmBuildNative>true</WasmBuildNative>
 	</PropertyGroup>
 	
 	<ItemGroup>
