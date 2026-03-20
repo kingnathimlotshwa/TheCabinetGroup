@@ -60,7 +60,7 @@ public class ConfigurationLoader
             BucketId   = section["BucketId"]   ?? string.Empty,
             Collections = new CollectionIds
             {
-                Members       = section["Collections:Members"]       ?? "members",
+                Profiles       = section["Collections:Members"]       ?? "members",
                 Contributions = section["Collections:Contributions"] ?? "contributions",
                 Payments      = section["Collections:Payments"]      ?? "payments",
                 Penalties     = section["Collections:Penalties"]     ?? "penalties",

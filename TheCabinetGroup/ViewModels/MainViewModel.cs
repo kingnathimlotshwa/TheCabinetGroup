@@ -23,7 +23,7 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] ToastManager? _toastManager;
 
-    [ObservableProperty] private Member? _currentMember;
+    [ObservableProperty] private AppUser? _currentMember;
     [ObservableProperty] private bool _isAuthenticated;
 
     private const string LoginDialogId = "LoginDialogHost";
@@ -32,11 +32,10 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _errorMessage = string.Empty;
 
-
     // ── MEMBER ─────────────────────────────────────────────────────────
-    public string MemberName => _currentMember.FullName;
-    public string MemberRole => _currentMember.Role;
-    public bool IsAdmin => _currentMember.Role == "admin";
+    [ObservableProperty] public string _memberName = string.Empty;
+    [ObservableProperty] public string _memberRole = string.Empty;
+    [ObservableProperty] public bool _isAdmin = false;
 
     public event Action? LogoutRequested;
 
@@ -46,11 +45,10 @@ public partial class MainViewModel : ViewModelBase
         AuthViewModel authVm,
         ToastManager toastManager)
     {
-        _appwrite     = appwrite;
-        _cache        = cache;
-        _authVm       = authVm;
+        _appwrite = appwrite;
+        _cache = cache;
+        _authVm = authVm;
         _toastManager = toastManager;
-
         _authVm.LoginSucceeded += OnLoginSucceeded;
     }
 
@@ -69,7 +67,7 @@ public partial class MainViewModel : ViewModelBase
         if (_cache.IsValid(cached))
         {
             var member = await _appwrite.TryRestoreSessionAsync(
-                cached!.UserId, cached.SessionSecret);
+                cached!.Email, cached.Password);
 
             if (member is not null)
             {
@@ -91,20 +89,23 @@ public partial class MainViewModel : ViewModelBase
     /// Receives the authenticated <see cref="Member"/> from MainWindow and
     /// makes the main shell aware that the user is now logged in.
     /// </summary>
-    public void OnMemberAuthenticated(Member member)
+    public void OnMemberAuthenticated(AppUser user)
     {
-        CurrentMember = member;
+        CurrentMember = user;
         IsAuthenticated = true;
     }
 
     // ── LoginSucceeded handler ─────────────────────────────────────────────
-    private void OnLoginSucceeded(Member member)
+    private void OnLoginSucceeded(AppUser user)
     {
-        CurrentMember   = member;
+        CurrentMember = user;
         IsAuthenticated = true;
 
+        MemberName = user.FullName;
+        MemberRole = user.Role;
+        IsAdmin = user.IsAdmin;
         if (DialogHost.IsDialogOpen(LoginDialogId))
-            DialogHost.Close(LoginDialogId, member);
+            DialogHost.Close(LoginDialogId, user);
     }
 
     // ── Shell commands ─────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private async Task ShowConfirmDialog()
     {
-        var vm   = new ConfirmDialogViewModel("Confirm Action", "Are you sure you want to proceed?");
+        var vm = new ConfirmDialogViewModel("Confirm Action", "Are you sure you want to proceed?");
         var view = new ConfirmDialogView { DataContext = vm };
 
         var result = await DialogHost.Show(view, MainDialogId);
@@ -128,5 +129,4 @@ public partial class MainViewModel : ViewModelBase
         else
             ToastManager?.CreateToast("Cancelled").WithContent("Action was cancelled.").ShowWarning();
     }
-
 }

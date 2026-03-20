@@ -36,6 +36,28 @@ public class Contribution
     public string Status { get; set; } = "pending";
     public string? Notes { get; set; }
 }
+public class AppUser
+{
+    public string  Id          { get; set; } = string.Empty;
+    public string  FullName    { get; set; } = string.Empty;
+    public string  Email       { get; set; } = string.Empty;
+    public string  Phone       { get; set; } = string.Empty;
+    public string  IdNumber    { get; set; } = string.Empty;
+    public string  Role        { get; set; } = "member";
+    public string? BankAccount { get; set; }
+    public string? BankName    { get; set; }
+    public bool    IsAdmin     => Role == "admin";
+}
+
+public class UserProfile
+{
+    public string  UserId      { get; set; } = string.Empty;
+    public string  IdNumber    { get; set; } = string.Empty;
+    public string  Role        { get; set; } = "member";
+    public string? BankAccount { get; set; }
+    public string? BankName    { get; set; }
+    public string? BankBranchCode    { get; set; }
+}
 
 public class Member
 {
@@ -130,7 +152,7 @@ public class AppwriteConfig
 /// </summary>
 public class CollectionIds
 {
-    public string Members { get; set; } = "members";
+    public string Profiles { get; set; } = "profiles";
     public string Contributions { get; set; } = "contributions";
     public string Payments { get; set; } = "payments";
     public string Penalties { get; set; } = "penalties";

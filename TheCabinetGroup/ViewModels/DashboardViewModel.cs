@@ -15,7 +15,7 @@ public partial class DashboardViewModel : ViewModelBase
 {
     private readonly IAppwriteService _appwrite;
     private readonly ToastManager _toast;
-    private Member _currentMember = new();
+    private AppUser _currentMember = new();
 
     [ObservableProperty] private DashboardSummary? _summary;
     [ObservableProperty] private bool _isBusy;
@@ -26,14 +26,13 @@ public partial class DashboardViewModel : ViewModelBase
     [ObservableProperty] private double _newPaymentAmount;
 
     [ObservableProperty] private ObservableCollection<Penalty> _penalties = [];
-    [ObservableProperty] private ObservableCollection<Member> _members = [];
     [ObservableProperty] private string _activeTab = "Dashboard";
 
 
     // ── MEMBER ─────────────────────────────────────────────────────────
-    public string MemberName => _currentMember.FullName;
-    public string MemberRole => _currentMember.Role;
-    public bool IsAdmin => _currentMember.Role == "admin";
+    [ObservableProperty] public string _memberName = string.Empty;
+    [ObservableProperty] public string _memberRole = string.Empty;
+    [ObservableProperty] public bool _isAdmin = false;
 
     [ObservableProperty] private string? _selectedPaymentId;
     [ObservableProperty] private string _uploadStatus = string.Empty;
@@ -50,9 +49,9 @@ public partial class DashboardViewModel : ViewModelBase
         _toast = toast;
     }
 
-    public void SetMember(Member member)
+    public void SetMember(AppUser user)
     {
-        _currentMember = member;
+        _currentMember = user;
         OnPropertyChanged(nameof(MemberName));
         OnPropertyChanged(nameof(MemberRole));
         OnPropertyChanged(nameof(IsAdmin));
@@ -66,21 +65,9 @@ public partial class DashboardViewModel : ViewModelBase
         await Task.WhenAll(
             LoadDashboardAsync(),
             LoadPaymentsAsync(),
-            LoadPenaltiesAsync(),
-            LoadMembersAsync());
+            LoadPenaltiesAsync());
     }
 
-    // ── Members ─────────────────────────────────────────────────────────────
-
-    [RelayCommand]
-    public async Task LoadMembersAsync()
-    {
-        await RunSafeAsync(async () =>
-        {
-            var list = await _appwrite.GetAllMembersAsync();
-            Members = new ObservableCollection<Member>(list);
-        });
-    }
 
     [RelayCommand]
     public async Task ViewProofAsync(string fileId)

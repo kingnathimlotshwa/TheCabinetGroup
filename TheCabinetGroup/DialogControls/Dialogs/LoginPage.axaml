@@ -9,7 +9,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
-    xmlns:vm="clr-namespace:TheCabinetGroup.ViewModels"
+    xmlns:vm="clr-namespace:TheCabinetGroup.DialogControls.DialogModels"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Design.DataContext>
         <vm:AuthViewModel />

@@ -9,14 +9,8 @@ namespace TheCabinetGroup.Services;
 public interface IAppwriteService
 {
     string? CurrentUserId { get; }
+    string? CurrentSessionId { get; }
 
-    /// <summary>
-    /// The raw session secret (JWT) obtained after the last successful login.
-    /// Stored here so the cache layer can persist it without exposing Appwrite
-    /// SDK types outside of <see cref="AppwriteService"/>.
-    /// </summary>
-    string? CurrentSessionSecret { get; }
-    
     // Auth
     Task<string> RegisterAsync(string email, string password, string name);
     Task LoginWithEmailAsync(string email, string password);
@@ -30,46 +24,48 @@ public interface IAppwriteService
     Task SendPhoneVerificationAsync();
     Task ConfirmPhoneVerificationAsync(string userId, string secret);
     Task LogoutAsync();
-    
+
     /// <summary>
-    /// Re-hydrates an Appwrite client session from a previously-cached secret
-    /// and verifies it is still active on the server.
-    /// Returns the <see cref="Member"/> profile on success, or null if the
-    /// session has expired / is otherwise invalid.
+    /// Re-hydrates a session from cache and verifies it is still valid.
+    /// Returns the <see cref="AppUser"/> on success, null if expired.
     /// </summary>
-    Task<Member?> TryRestoreSessionAsync(string userId, string sessionSecret);
+    Task<AppUser?> TryRestoreSessionAsync(string email, string password);
 
-    // Members
-    Task<Member> CreateMemberProfileAsync(Member member);
-    Task<Member?> GetMemberByUserIdAsync(string userId);
-    Task<Member> GetMemberByIdAsync(string memberId);
-    Task<List<Member>> GetAllMembersAsync();
-    Task UpdateMemberAsync(Member member);
+    // ── Current user ──────────────────────────────────────────────────────────
+    /// <summary>
+    /// Returns Auth details + profile fields merged into one <see cref="AppUser"/>.
+    /// </summary>
+    Task<AppUser> GetCurrentUserAsync();
 
+    /// <summary>
+    /// Saves extra profile fields to the profiles collection.
+    /// Creates a new document or updates existing one (upsert).
+    /// </summary>
+    Task SaveUserProfileAsync(UserProfile profile);
     // Contributions
     Task<List<Contribution>> GetMyContributionsAsync(string memberId);
     Task<double> GetTotalContributedAsync(string memberId);
 
-    // Payments
-    Task<Payment> SubmitPaymentAsync(string memberId, double amount,
-        string? contributionId = null, string? notes = null);
-    Task<string> UploadProofOfPaymentAsync(string paymentId, string memberId,
-        Stream fileStream, string fileName);
+    // ── Payments ──────────────────────────────────────────────────────────────
+    Task<Payment> SubmitPaymentAsync(string userId, double amount,
+                                     string? contributionId = null, string? notes = null);
+    Task<string> UploadProofOfPaymentAsync(string paymentId, string userId,
+                                           Stream fileStream, string fileName);
     Task<string> GetProofOfPaymentUrlAsync(string fileId);
-    Task<List<Payment>> GetMyPaymentsAsync(string memberId);
-    Task<List<Payment>> GetPaymentsByStatusAsync(string memberId, string status);
+    Task<List<Payment>> GetMyPaymentsAsync(string userId);
+    Task<List<Payment>> GetPaymentsByStatusAsync(string userId, string status);
 
-    // Penalties
-    Task<List<Penalty>> GetMyPenaltiesAsync(string memberId);
-    Task<double> GetOutstandingPenaltiesAsync(string memberId);
+    // ── Penalties ─────────────────────────────────────────────────────────────
+    Task<List<Penalty>> GetMyPenaltiesAsync(string userId);
+    Task<double> GetOutstandingPenaltiesAsync(string userId);
 
-    // Settings
+    // ── Settings ──────────────────────────────────────────────────────────────
     Task<StokvelSettings?> GetStokvelSettingsAsync();
 
-    // Dashboard
-    Task<DashboardSummary> GetDashboardSummaryAsync(string memberId);
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+    Task<DashboardSummary> GetDashboardSummaryAsync(string userId);
 
-    // History
-    Task<List<Payment>> GetPaymentHistoryAsync(string memberId,
-        DateTime? from = null, DateTime? to = null);
+    // ── History ───────────────────────────────────────────────────────────────
+    Task<List<Payment>> GetPaymentHistoryAsync(string userId,
+                                               DateTime? from = null, DateTime? to = null);
 }

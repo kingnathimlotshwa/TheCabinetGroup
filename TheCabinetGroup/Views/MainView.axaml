@@ -44,18 +44,14 @@
                                     VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
-                        <!-- <StackPanel> -->
-                        <!--  <Button  -->
-                        <!--  Classes="Icon"  -->
-                        <!--  Command="{Binding ShowToastCommand}"  -->
-                        <!--  Content="{LucideIconContent Command}" />  -->
-                        <!--  <Button  -->
-                        <!--  Classes="Icon"  -->
-                        <!--  Command="{Binding ShowConfirmDialogCommand}"  -->
-                        <!--  Content="{LucideIconContent Popcorn}" />  -->
-                        <!-- </StackPanel> -->
+                        <shadUi:Card HasShadow="True" IsVisible="{Binding IsAuthenticated}">
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="h1" Text="{Binding MemberName}" />
+                                <TextBlock Classes="h4" Text="{Binding MemberRole}" />
+                            </StackPanel>
+                        </shadUi:Card>
                     </TabItem>
-                    <TabItem>
+                    <TabItem IsVisible="False">
                         <TabItem.Header>
                             <StackPanel Orientation="Horizontal" Spacing="2">
                                 <LucideIcon Kind="Users" Size="18" />

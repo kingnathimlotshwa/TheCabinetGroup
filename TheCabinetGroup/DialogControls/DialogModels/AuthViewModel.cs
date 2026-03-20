@@ -16,8 +16,9 @@ using TheCabinetGroup.Helpers;
 using TheCabinetGroup.Models;
 using TheCabinetGroup.Services;
 using TheCabinetGroup.Utils;
+using TheCabinetGroup.ViewModels;
 
-namespace TheCabinetGroup.ViewModels;
+namespace TheCabinetGroup.DialogControls.DialogModels;
 
 public partial class AuthViewModel : ViewModelBase
 {
@@ -26,8 +27,7 @@ public partial class AuthViewModel : ViewModelBase
     private readonly ToastManager _toast;
 
     // Events consumed by MainWindow to swap views
-    public event Action<Member>? LoginSucceeded;
-    public event Action? RegisterSucceeded;
+    public event Action<AppUser>? LoginSucceeded;
 
     // Logo Color
     [ObservableProperty] private string _logoColor = ".Black { fill: #54A9FF; }";
@@ -55,8 +55,8 @@ public partial class AuthViewModel : ViewModelBase
     [ObservableProperty] private string _regPassword = string.Empty;
     [ObservableProperty] private string _regConfirmPassword = string.Empty;
     [ObservableProperty] private string _regBankAccount = string.Empty;
-    [ObservableProperty] private BankModel _regBank;
-    [ObservableProperty] private List<BankModel> _regBanks;
+    [ObservableProperty] private BankModel _regBank = new();
+    [ObservableProperty] private List<BankModel> _regBanks = [];
 
     // ── Forgot Password ──
     [ObservableProperty] private string _forgotEmail = string.Empty;
@@ -100,20 +100,16 @@ public partial class AuthViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(LoginEmail) || string.IsNullOrWhiteSpace(LoginPassword))
         {
-            ErrorMessage = "Please enter email and password.";
-            _toast.CreateToast($"Login Error")
-                  .WithContent($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError("Please enter email and password.");
             return;
         }
 
         await RunSafeAsync(async () =>
         {
             await _appwrite.LoginWithEmailAsync(LoginEmail, LoginPassword);
-            var member = await _appwrite.GetMemberByUserIdAsync(_appwrite.CurrentUserId!)
-                         ?? throw new Exception("Member profile not found. Contact your admin.");
-            PersistSessionIfRequired();
+            var member = await _appwrite.GetCurrentUserAsync()
+                         ?? throw new Exception("Profile not found. Contact your admin.");
+            PersistSessionIfRequired(LoginEmail, LoginPassword);
 
             _toast.CreateToast($"Welcome back, {member.FullName}!")
                   .WithDelay(2)
@@ -158,13 +154,12 @@ public partial class AuthViewModel : ViewModelBase
         await RunSafeAsync(async () =>
         {
             await _appwrite.ConfirmPhoneOtpAsync(_otpUserId!, PhoneOtp);
-            var member = await _appwrite.GetMemberByUserIdAsync(_appwrite.CurrentUserId!)
-                         ?? throw new Exception("Member profile not found.");
-            PersistSessionIfRequired();
-            _toast.CreateToast("Welcome back, " + member.FullName + "!")
+            var user = await _appwrite.GetCurrentUserAsync()
+                       ?? throw new Exception("Profile not found.");
+            //OTP login has no email/password to cache — remember me not supported for OTP
+            _toast.CreateToast("Welcome back, " + user.FullName + "!")
                   .ShowSuccess();
-
-            LoginSucceeded?.Invoke(member);
+            LoginSucceeded?.Invoke(user);
         });
     }
 
@@ -174,30 +169,39 @@ public partial class AuthViewModel : ViewModelBase
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        if (RegPassword != RegConfirmPassword)
-        {
-            ErrorMessage = "Passwords do not match.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(RegFullName))
         {
-            ErrorMessage = "Full name is required.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError("Full name is required.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(RegEmail))
         {
-            ErrorMessage = "Email is required.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError("Email is required.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(RegIdNumber))
+        {
+            ShowError("ID number is required.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(RegPassword))
+        {
+            ShowError("Password is required.");
+            return;
+        }
+
+        if (RegPassword != RegConfirmPassword)
+        {
+            ShowError("Passwords do not match.");
+            return;
+        }
+
+        if (RegPassword.Length < 8)
+        {
+            ShowError("Password must be 8+ characters.");
             return;
         }
 
@@ -205,25 +209,22 @@ public partial class AuthViewModel : ViewModelBase
         {
             var userId = await _appwrite.RegisterAsync(RegEmail, RegPassword, RegFullName);
             await _appwrite.LoginWithEmailAsync(RegEmail, RegPassword);
-            await _appwrite.CreateMemberProfileAsync(new Member
-                                                     {
-                                                         UserId = userId,
-                                                         FullName = RegFullName,
-                                                         Email = RegEmail,
-                                                         PhoneNumber = RegPhone,
-                                                         IdNumber = RegIdNumber,
-                                                         JoinDate = DateTime.UtcNow,
-                                                         IsActive = true,
-                                                         Role = "member",
-                                                         BankAccount = RegBankAccount,
-                                                         BankName = $"{RegBank.BankName} [{RegBank.NationalBranchCode}]"
-                                                     });
+            await _appwrite.SaveUserProfileAsync(new UserProfile
+                                                 {
+                                                     UserId = _appwrite.CurrentUserId!,
+                                                     IdNumber = RegIdNumber,
+                                                     Role = "member",
+                                                     BankAccount = RegBankAccount,
+                                                     BankName = $"{RegBank.BankName}",
+                                                     BankBranchCode = $"{RegBank.NationalBranchCode}"
+                                                 });
+
             await _appwrite.SendEmailVerificationAsync("https://yourstokvelapp.com/verify");
 
-            _toast.CreateToast("Account created! Check your email to verify.")
+            var user = await _appwrite.GetCurrentUserAsync();
+            _toast.CreateToast($"Welcome, {user.FullName}! Check your email to verify.")
                   .ShowSuccess();
-
-            RegisterSucceeded?.Invoke();
+            LoginSucceeded?.Invoke(user);
         });
     }
 
@@ -234,10 +235,7 @@ public partial class AuthViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(ForgotEmail))
         {
-            ErrorMessage = "Enter your email address.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError("Enter your email address.");
             return;
         }
 
@@ -245,7 +243,7 @@ public partial class AuthViewModel : ViewModelBase
         {
             await _appwrite.ForgotPasswordAsync(ForgotEmail, "https://localhost/reset-password");
             RecoveryEmailSent = true;
-            _toast.CreateToast("Recovery email sent to " + ForgotEmail)
+            _toast.CreateToast("Recovery email sent to " + ForgotEmail).WithDelay(3)
                   .ShowInfo();
         });
     }
@@ -255,10 +253,7 @@ public partial class AuthViewModel : ViewModelBase
     {
         if (NewPassword != ConfirmNewPassword)
         {
-            ErrorMessage = "New passwords do not match.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError("New passwords do not match.");
             return;
         }
 
@@ -268,7 +263,7 @@ public partial class AuthViewModel : ViewModelBase
             OldPassword = string.Empty;
             NewPassword = string.Empty;
             ConfirmNewPassword = string.Empty;
-            _toast.CreateToast("Password changed successfully!")
+            _toast.CreateToast("Password changed successfully!").WithDelay(3)
                   .ShowSuccess();
         });
     }
@@ -316,19 +311,23 @@ public partial class AuthViewModel : ViewModelBase
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
+    private void ShowError(string message)
+    {
+        ErrorMessage = message;
+        _toast.CreateToast(message).WithDelay(2).ShowError();
+    }
+
     /// <summary>
     /// Writes the current session to disk when RememberMe is ticked.
     /// The session remains valid for <see cref="LoginCacheService.CacheDuration"/>.
     /// </summary>
-    private void PersistSessionIfRequired()
+    private void PersistSessionIfRequired(string email, string password)
     {
         if (!RememberMe) return;
-        if (_appwrite.CurrentUserId is null || _appwrite.CurrentSessionSecret is null) return;
-
         _cache.Save(new SessionCache
                     {
-                        UserId = _appwrite.CurrentUserId,
-                        SessionSecret = _appwrite.CurrentSessionSecret,
+                        Email = email,
+                        Password = password,
                         ExpiresAt = DateTime.UtcNow.Add(LoginCacheService.CacheDuration),
                         RememberMe = true
                     });
@@ -344,17 +343,11 @@ public partial class AuthViewModel : ViewModelBase
         }
         catch (AppwriteException ex)
         {
-            ErrorMessage = ex.Message ?? "An Appwrite error occurred.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError(ex.Message ?? "An Appwrite error occurred.");
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError(ex.Message);
         }
         finally
         {

@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Appwrite;
 using Appwrite.Extensions;
 using Appwrite.Models;
 using Appwrite.Services;
+
 using Newtonsoft.Json;
+
 using TheCabinetGroup.Models;
+
 using File = Appwrite.Models.File;
 
 namespace TheCabinetGroup.Services;
@@ -24,16 +28,17 @@ public class AppwriteService : IAppwriteService
     // ── Config ───────────────────────────────────────────────────────────────
     private readonly AppwriteConfig _config;
     public string? CurrentUserId { get; private set; }
-    public string? CurrentSessionSecret { get; private set; }
+    public string? CurrentSessionId { get; private set; }
 
     // ── Json Settings ───────────────────────────────────────────────────────────────
     private static readonly JsonSerializerSettings _jsonSettings = new()
-    {
-        NullValueHandling = NullValueHandling.Ignore,
-        DateFormatHandling = DateFormatHandling.IsoDateFormat,
-        DateParseHandling = DateParseHandling.DateTime,
-        DateTimeZoneHandling = DateTimeZoneHandling.Utc
-    };
+                                                                   {
+                                                                       NullValueHandling = NullValueHandling.Ignore,
+                                                                       DateFormatHandling =
+                                                                           DateFormatHandling.IsoDateFormat,
+                                                                       DateParseHandling = DateParseHandling.DateTime,
+                                                                       DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                                                                   };
 
     public AppwriteService(AppwriteConfig config)
     {
@@ -41,8 +46,8 @@ public class AppwriteService : IAppwriteService
         _client = new Client()
                   .SetEndpoint(_config.Endpoint)
                   .SetProject(_config.ProjectId);
-            // .SetKey(_config.ApiKey)
-            // .SetSelfSigned(true); // set true only for self-hosted with no valid cert
+        // .SetKey(_config.ApiKey)
+        // .SetSelfSigned(true); // set true only for self-hosted with no valid cert
 
         _account = new Account(_client);
         _databases = new TablesDB(_client);
@@ -87,8 +92,7 @@ public class AppwriteService : IAppwriteService
     {
         var session = await _account.CreateEmailPasswordSession(email, password);
         CurrentUserId = session.UserId;
-        CurrentSessionSecret = session.Secret;
-        _client.SetSession(session.Secret);
+        CurrentSessionId = session.Id;
     }
 
     public async Task<string> RequestPhoneOtpAsync(string phone)
@@ -103,8 +107,7 @@ public class AppwriteService : IAppwriteService
     {
         var session = await _account.CreateSession(userId: userId, secret: secret);
         CurrentUserId = session.UserId;
-        CurrentSessionSecret = session.Secret;
-        _client.SetSession(session.Secret);
+        CurrentSessionId = session.Id;
     }
 
     public async Task ForgotPasswordAsync(string email, string redirectUrl)
@@ -132,101 +135,89 @@ public class AppwriteService : IAppwriteService
     {
         await _account.DeleteSession(sessionId: "current");
         CurrentUserId = null;
-        CurrentSessionSecret = null;
-        _client.SetSession(string.Empty);
+        CurrentSessionId = null;
     }
 
-
+    // ───────────────── CURRENT USER ───────────────────────────────────────────
     /// <inheritdoc />
-    public async Task<Member?> TryRestoreSessionAsync(string userId, string sessionSecret)
+    public async Task<AppUser?> TryRestoreSessionAsync(string email, string password)
     {
         try
         {
-            _client.SetSession(sessionSecret);
-            CurrentUserId = userId;
-            CurrentSessionSecret = sessionSecret;
+            CurrentUserId = email;
+            CurrentSessionId = password;
 
-            // Verify the session is still alive on the Appwrite server.
-            // _account.Get() throws AppwriteException (401) if expired.
+            // Verify the session is still alive — throws 401 if expired.
+            // The SDK uses the stored session cookie automatically.
             await _account.Get();
-
-            return await GetMemberByUserIdAsync(userId);
+            return await GetCurrentUserAsync();
         }
         catch
         {
             // Session is expired or network error – reset state cleanly.
             CurrentUserId = null;
-            CurrentSessionSecret = null;
-            _client.SetSession(string.Empty);
+            CurrentSessionId = null;
             return null;
         }
     }
 
-    // ───────────────── MEMBER PROFILE ─────────────────
 
-    public async Task<Member> CreateMemberProfileAsync(Member member)
+    public async Task<AppUser> GetCurrentUserAsync()
+    {
+        var user = await _account.Get();
+
+        UserProfile? profile = null;
+        try
+        {
+            var result = await _databases.ListRows(
+                databaseId: _config.DatabaseId,
+                tableId: _config.Collections.Profiles,
+                queries: [Query.Equal("userId", user.Id)]);
+
+            if (result.Rows.Count > 0)
+                profile = FromRow<UserProfile>(result.Rows[0]);
+        }
+        catch
+        {
+            // Profile not yet created — first login after registration
+        }
+
+        return new AppUser
+               {
+                   Id = user.Id,
+                   FullName = user.Name,
+                   Email = user.Email,
+                   Phone = user.Phone,
+                   IdNumber = profile?.IdNumber ?? string.Empty,
+                   Role = profile?.Role ?? "member",
+                   BankAccount = profile?.BankAccount,
+                   BankName = profile?.BankName
+               };
+    }
+
+    public async Task SaveUserProfileAsync(UserProfile profile)
     {
         var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(
-                       JsonConvert.SerializeObject(member, _jsonSettings), _jsonSettings)
-                   ?? throw new InvalidOperationException("Failed to serialize member.");
+                       JsonConvert.SerializeObject(profile, _jsonSettings), _jsonSettings)
+                   ?? throw new InvalidOperationException("Failed to serialize profile.");
 
-        var doc = await _databases.CreateRow(
+        var existing = await _databases.ListRows(
             databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Members,
-            rowId: ID.Unique(),
-            data: data,
-            permissions: new List<string>
-            {
-                Permission.Read(Role.User(member.UserId)),
-                Permission.Update(Role.User(member.UserId)),
-                Permission.Read(Role.Team("admins")),
-                Permission.Update(Role.Team("admins"))
-            });
+            tableId:    _config.Collections.Profiles,
+            queries:    [Query.Equal("userId", profile.UserId)]);
 
-        return FromRow<Member>(doc);
-    }
-
-    public async Task<Member?> GetMemberByUserIdAsync(string userId)
-    {
-        var result = await _databases.ListRows(
-            databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Members,
-            queries: [Query.Equal("userId", userId)]);
-
-        return result.Rows.Count > 0 ? FromRow<Member>(result.Rows[0]) : null;
-    }
-
-    public async Task<Member> GetMemberByIdAsync(string memberId)
-    {
-        var doc = await _databases.GetRow(
-            databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Members,
-            rowId: memberId);
-
-        return FromRow<Member>(doc);
-    }
-
-    public async Task<List<Member>> GetAllMembersAsync()
-    {
-        var result = await _databases.ListRows(
-            databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Members,
-            queries: [Query.OrderAsc("fullName")]);
-
-        return FromRowList<Member>(result);
-    }
-
-    public async Task UpdateMemberAsync(Member member)
-    {
-        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(
-                       JsonConvert.SerializeObject(member, _jsonSettings), _jsonSettings)
-                   ?? throw new InvalidOperationException("Failed to serialize member.");
-
-        await _databases.UpdateRow(
-            databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Members,
-            rowId: member.Id,
-            data: data);
+        if (existing.Rows.Count > 0)
+            await _databases.UpdateRow(
+                databaseId: _config.DatabaseId,
+                tableId:    _config.Collections.Profiles,
+                rowId:      existing.Rows[0].Id,
+                data:       data);
+        else
+            await _databases.CreateRow(
+                databaseId: _config.DatabaseId,
+                tableId:    _config.Collections.Profiles,
+                rowId:      ID.Unique(),
+                data:       data);
     }
 
     // ───────────────── CONTRIBUTIONS ─────────────────
@@ -260,42 +251,43 @@ public class AppwriteService : IAppwriteService
             tableId: _config.Collections.Payments,
             rowId: ID.Unique(),
             data: new Dictionary<string, object>
-            {
-                ["memberId"] = memberId,
-                ["contributionId"] = contributionId ?? string.Empty,
-                ["amount"] = amount,
-                ["paymentDate"] = DateTime.UtcNow.ToString("o"),
-                ["status"] = "pending",
-                ["notes"] = notes ?? string.Empty
-            },
+                  {
+                      ["memberId"] = memberId,
+                      ["contributionId"] = contributionId ?? string.Empty,
+                      ["amount"] = amount,
+                      ["paymentDate"] = DateTime.UtcNow.ToString("o"),
+                      ["status"] = "pending",
+                      ["notes"] = notes ?? string.Empty
+                  },
             permissions: new List<string>
-            {
-                Permission.Read(Role.User(CurrentUserId!)),
-                Permission.Read(Role.Team("admins")),
-                Permission.Update(Role.Team("admins"))
-            });
+                         {
+                             Permission.Read(Role.User(CurrentUserId!)),
+                             Permission.Read(Role.Team("admins")),
+                             Permission.Update(Role.Team("admins"))
+                         });
 
         return FromRow<Payment>(doc);
     }
 
-    public async Task<string> UploadProofOfPaymentAsync(string paymentId, string memberId,
+    public async Task<string> UploadProofOfPaymentAsync(
+        string paymentId, string memberId,
         Stream fileStream, string fileName)
     {
         var file = await _storage.CreateFile(
-            bucketId:    _config.BucketId,
-            fileId:      ID.Unique(),
-            file:        InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
+            bucketId: _config.BucketId,
+            fileId: ID.Unique(),
+            file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
             permissions: new List<string>
-            {
-                Permission.Read(Role.User(CurrentUserId!)),
-                Permission.Read(Role.Team("admins"))
-            });
+                         {
+                             Permission.Read(Role.User(CurrentUserId!)),
+                             Permission.Read(Role.Team("admins"))
+                         });
 
         await _databases.UpdateRow(
             databaseId: _config.DatabaseId,
-            tableId:    _config.Collections.Payments,
-            rowId:      paymentId,
-            data:       new Dictionary<string, object> { ["proofFileId"] = file.Id });
+            tableId: _config.Collections.Payments,
+            rowId: paymentId,
+            data: new Dictionary<string, object> { ["proofFileId"] = file.Id });
 
         return file.Id;
     }
@@ -361,49 +353,50 @@ public class AppwriteService : IAppwriteService
 
     public async Task<DashboardSummary> GetDashboardSummaryAsync(string memberId)
     {
-        var paymentsTask  = GetMyPaymentsAsync(memberId);
+        var paymentsTask = GetMyPaymentsAsync(memberId);
         var penaltiesTask = GetMyPenaltiesAsync(memberId);
-        var settingsTask  = GetStokvelSettingsAsync();
+        var settingsTask = GetStokvelSettingsAsync();
 
         await Task.WhenAll(paymentsTask, penaltiesTask, settingsTask);
 
-        var payments  = paymentsTask.Result;
+        var payments = paymentsTask.Result;
         var penalties = penaltiesTask.Result;
-        var settings  = settingsTask.Result;
+        var settings = settingsTask.Result;
 
-        var approved        = payments.Where(p => p.Status == "approved").ToList();
-        var totalContrib    = approved.Sum(p => p.Amount);
-        var totalPenalties  = penalties.Sum(p => p.Amount);
-        var outstanding     = penalties.Where(p => !p.IsPaid).Sum(p => p.Amount);
-        var lastAmount      = approved.OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.Amount ?? 0;
-        var avgAmount       = approved.Count > 0 ? approved.Average(p => p.Amount) : 0;
+        var approved = payments.Where(p => p.Status == "approved").ToList();
+        var totalContrib = approved.Sum(p => p.Amount);
+        var totalPenalties = penalties.Sum(p => p.Amount);
+        var outstanding = penalties.Where(p => !p.IsPaid).Sum(p => p.Amount);
+        var lastAmount = approved.OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.Amount ?? 0;
+        var avgAmount = approved.Count > 0 ? approved.Average(p => p.Amount) : 0;
         var monthsRemaining = settings?.MonthsRemaining ?? 0;
 
         return new DashboardSummary
-        {
-            TotalContributed     = totalContrib,
-            TotalPenalties       = totalPenalties,
-            OutstandingPenalties = outstanding,
-            TotalPayments        = payments.Count,
-            PendingPayments      = payments.Count(p => p.Status == "pending"),
-            NextDueDate          = settings?.NextDueDate ?? DateTime.Today.AddDays(30),
-            ProjectedFinalAmount = totalContrib + (avgAmount * monthsRemaining),
-            LastPaymentAmount    = lastAmount,
-            AveragePaymentAmount = avgAmount,
-            MonthsRemaining      = monthsRemaining,
-            GroupName            = settings?.GroupName ?? "Stokvel"
-        };
+               {
+                   TotalContributed = totalContrib,
+                   TotalPenalties = totalPenalties,
+                   OutstandingPenalties = outstanding,
+                   TotalPayments = payments.Count,
+                   PendingPayments = payments.Count(p => p.Status == "pending"),
+                   NextDueDate = settings?.NextDueDate ?? DateTime.Today.AddDays(30),
+                   ProjectedFinalAmount = totalContrib + (avgAmount * monthsRemaining),
+                   LastPaymentAmount = lastAmount,
+                   AveragePaymentAmount = avgAmount,
+                   MonthsRemaining = monthsRemaining,
+                   GroupName = settings?.GroupName ?? "Stokvel"
+               };
     }
 
     // ───────────────── PAYMENT HISTORY ─────────────────
-    public async Task<List<Payment>> GetPaymentHistoryAsync(string memberId,
+    public async Task<List<Payment>> GetPaymentHistoryAsync(
+        string memberId,
         DateTime? from = null, DateTime? to = null)
     {
         var queries = new List<string>
-        {
-            Query.Equal("memberId", memberId),
-            Query.OrderDesc("paymentDate")
-        };
+                      {
+                          Query.Equal("memberId", memberId),
+                          Query.OrderDesc("paymentDate")
+                      };
 
         if (from.HasValue)
             queries.Add(Query.GreaterThanEqual("paymentDate", from.Value.ToString("o")));
@@ -412,8 +405,8 @@ public class AppwriteService : IAppwriteService
 
         var result = await _databases.ListRows(
             databaseId: _config.DatabaseId,
-            tableId:    _config.Collections.Payments,
-            queries:    queries);
+            tableId: _config.Collections.Payments,
+            queries: queries);
 
         return FromRowList<Payment>(result);
     }

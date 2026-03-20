@@ -29,8 +29,8 @@ public interface ILoginCacheService
 /// <summary>Value object stored in the on-disk JSON cache file.</summary>
 public sealed class SessionCache
 {
-    public string UserId        { get; set; } = string.Empty;
-    public string SessionSecret { get; set; } = string.Empty;
-    public DateTime ExpiresAt   { get; set; }
-    public bool RememberMe      { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public bool RememberMe { get; set; }
 }
