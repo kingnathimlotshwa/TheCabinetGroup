@@ -321,7 +321,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Install WASM workload
-        run: dotnet workload install wasm-tools
+        run: dotnet workload install wasm-tools-net9
 
       - name: Write appsettings.json
         run: |
