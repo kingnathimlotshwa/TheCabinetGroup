@@ -3,3 +3,5 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+.idea/.idea.TheCabinetGroup/.idea/libraries/androidx_lifecycle_lifecycle_viewmodel_savedstate.xml
+.editorconfig

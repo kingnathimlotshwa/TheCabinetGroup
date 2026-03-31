@@ -10,6 +10,7 @@ using Appwrite.Models;
 using Appwrite.Services;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 using TheCabinetGroup.Models;
 
@@ -37,7 +38,8 @@ public class AppwriteService : IAppwriteService
                                                                        DateFormatHandling =
                                                                            DateFormatHandling.IsoDateFormat,
                                                                        DateParseHandling = DateParseHandling.DateTime,
-                                                                       DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                                                                       DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                                                                       ContractResolver = new CamelCasePropertyNamesContractResolver()
                                                                    };
 
     public AppwriteService(AppwriteConfig config)
@@ -90,6 +92,16 @@ public class AppwriteService : IAppwriteService
 
     public async Task LoginWithEmailAsync(string email, string password)
     {
+        // Clear any existing session first — Appwrite throws if CreateEmailPasswordSession
+        // is called while a session is already active on the client.
+        if (CurrentSessionId is not null)
+        {
+            try { await _account.DeleteSession(sessionId: "current"); }
+            catch { /* already expired — ignore */ }
+            CurrentUserId = null;
+            CurrentSessionId = null;
+        }
+
         var session = await _account.CreateEmailPasswordSession(email, password);
         CurrentUserId = session.UserId;
         CurrentSessionId = session.Id;
@@ -142,19 +154,17 @@ public class AppwriteService : IAppwriteService
     /// <inheritdoc />
     public async Task<AppUser?> TryRestoreSessionAsync(string email, string password)
     {
+        // Re-authenticates using cached credentials. Safe because the cache is
+        // short-lived (2 hours). Delegates to LoginWithEmailAsync so CurrentUserId
+        // and CurrentSessionId are set consistently in one place.
         try
         {
-            CurrentUserId = email;
-            CurrentSessionId = password;
-
-            // Verify the session is still alive — throws 401 if expired.
-            // The SDK uses the stored session cookie automatically.
-            await _account.Get();
+            await LoginWithEmailAsync(email, password);
             return await GetCurrentUserAsync();
         }
         catch
         {
-            // Session is expired or network error – reset state cleanly.
+            // Credentials expired or invalid — reset state cleanly.
             CurrentUserId = null;
             CurrentSessionId = null;
             return null;

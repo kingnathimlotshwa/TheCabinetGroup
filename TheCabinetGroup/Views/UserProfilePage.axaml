@@ -1,0 +1,260 @@
+﻿<UserControl
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.Views.UserProfilePage"
+    x:DataType="vm:UserProfileViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:conv="clr-namespace:TheCabinetGroup.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="clr-namespace:TheCabinetGroup.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.DataContext>
+        <vm:UserProfileViewModel />
+    </Design.DataContext>
+    <Panel Margin="0,10,0,0">
+        <ScrollViewer
+            HorizontalAlignment="Center"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,12" Spacing="16">
+
+                <!--  ── Section switcher (Details / Security) ────────────────────  -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Button
+                        Classes="Secondary"
+                        Command="{Binding ShowDetailsCommand}"
+                        Content="Personal Details" />
+                    <Button
+                        Classes="Secondary"
+                        Command="{Binding ShowSecurityCommand}"
+                        Content="Security" />
+                </StackPanel>
+
+                <!--  ── Error banner ─────────────────────────────────────────────  -->
+                <shadUi:Card Background="{DynamicResource DestructiveColor}" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock
+                        Foreground="White"
+                        Text="{Binding ErrorMessage}"
+                        TextWrapping="Wrap" />
+                </shadUi:Card>
+
+                <!--
+                    ══════════════════════════════════════════════════════════════
+                    PERSONAL DETAILS SECTION
+                    ══════════════════════════════════════════════════════════════
+                -->
+                <shadUi:Card HasShadow="True" IsVisible="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Details}">
+                    <StackPanel Spacing="14">
+
+                        <!--  Card header with Edit / Cancel toggle  -->
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock
+                                Classes="h3"
+                                Grid.Column="0"
+                                Text="Account Information" />
+
+                        </Grid>
+
+                        <Separator />
+
+                        <!--  Full Name  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Full Name" />
+                            <!--  READ: plain text when not editing  -->
+                            <TextBlock
+                                IsVisible="{Binding !IsEditMode}"
+                                Text="{Binding FullName}"
+                                TextWrapping="Wrap" />
+                            <!--  EDIT: text input  -->
+                            <TextBox
+                                IsVisible="{Binding IsEditMode}"
+                                Text="{Binding FullName}"
+                                Watermark="Enter your full name" />
+                        </StackPanel>
+
+                        <!--  Email (read-only — managed by Appwrite Auth)  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Email Address" />
+                            <TextBlock Text="{Binding Email}" />
+                            <TextBlock
+                                Classes="muted"
+                                FontSize="11"
+                                IsVisible="{Binding IsEditMode}"
+                                Text="Email is managed by your account and cannot be changed here." />
+                        </StackPanel>
+
+                        <!--  Phone (read-only — managed by Appwrite Auth)  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Phone Number" />
+                            <TextBlock Text="{Binding Phone}" />
+                            <TextBlock
+                                Classes="muted"
+                                FontSize="11"
+                                IsVisible="{Binding IsEditMode}"
+                                Text="Phone is linked to your account and cannot be changed here." />
+                        </StackPanel>
+
+                        <!--  ID Number  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="South African ID Number" />
+                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding IdNumber, FallbackValue='—'}" />
+                            <TextBox
+                                IsVisible="{Binding IsEditMode}"
+                                MaxLength="13"
+                                Text="{Binding IdNumber}"
+                                Watermark="Enter your 13-digit ID number" />
+                        </StackPanel>
+
+                        <Separator />
+
+                        <TextBlock Classes="h4" Text="Banking Details" />
+
+                        <!--  Bank Name dropdown  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Bank" />
+                            <!--  READ  -->
+                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding SelectedBank.BankName, FallbackValue='—'}" />
+                            <!--  EDIT  -->
+                            <ComboBox
+                                DisplayMemberBinding="{Binding BankName}"
+                                IsVisible="{Binding IsEditMode}"
+                                ItemsSource="{Binding AvailableBanks}"
+                                SelectedItem="{Binding SelectedBank}"
+                                Width="300" />
+                        </StackPanel>
+
+                        <!--  Branch Code (auto-filled from selection, read-only)  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Universal Branch Code" />
+                            <TextBlock Text="{Binding SelectedBank.NationalBranchCode, FallbackValue='—'}" />
+                        </StackPanel>
+
+                        <!--  Bank Account Number  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="Account Number" />
+                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding BankAccount, FallbackValue='—'}" />
+                            <TextBox
+                                IsVisible="{Binding IsEditMode}"
+                                Text="{Binding BankAccount}"
+                                Watermark="Enter your bank account number" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+
+                            <!--  Cancel button — visible only in edit mode  -->
+                            <Button
+                                Classes="outline"
+                                Command="{Binding CancelEditCommand}"
+                                Content="Cancel"
+                                IsVisible="{Binding IsEditMode}" />
+
+                            <!--  Save button — visible only in edit mode  -->
+                            <Button
+                                Classes="default"
+                                Command="{Binding SaveProfileCommand}"
+                                Content="Save Changes"
+                                IsEnabled="{Binding !IsBusy}"
+                                IsVisible="{Binding IsEditMode}" />
+
+                            <!--  Edit button — visible when not in edit mode  -->
+                            <Button
+                                Classes="outline"
+                                Command="{Binding ToggleEditModeCommand}"
+                                IsVisible="{Binding !IsEditMode}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <LucideIcon Kind="Pencil" Size="14" />
+                                    <TextBlock Text="Edit" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!--  Busy indicator  -->
+                        <ProgressBar
+                            Height="3"
+                            IsIndeterminate="True"
+                            IsVisible="{Binding IsBusy}" />
+
+                    </StackPanel>
+                </shadUi:Card>
+
+                <!--
+                    ══════════════════════════════════════════════════════════════
+                    SECURITY SECTION – Change Password
+                    ══════════════════════════════════════════════════════════════
+                -->
+                <shadUi:Card HasShadow="True" IsVisible="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Security}">
+                    <StackPanel Spacing="14">
+
+                        <TextBlock Classes="h3" Text="Change Password" />
+                        <Separator />
+
+                        <!--  Current Password  -->
+                        <TextBox
+                            Classes="PasswordReveal"
+                            PasswordChar="•"
+                            Text="{Binding CurrentPassword, Mode=TwoWay}"
+                            Watermark="Min 8 characters"
+                            shadUi:ControlAssist.Label="Current Password" />
+
+                        <!--  Password  -->
+                        <TextBox
+                            Classes="PasswordReveal"
+                            PasswordChar="•"
+                            Text="{Binding NewPassword, Mode=TwoWay}"
+                            Watermark="Min 8 characters"
+                            shadUi:ControlAssist.Label="Password" />
+
+                        <!--  Confirm password  -->
+                        <TextBox
+                            Classes="PasswordReveal"
+                            Margin="0,0,0,24"
+                            PasswordChar="•"
+                            Text="{Binding ConfirmPassword, Mode=TwoWay}"
+                            Watermark="Confirm password"
+                            shadUi:ControlAssist.Label="Confirm password" />
+
+                        <Button
+                            Classes="default"
+                            Command="{Binding ChangePasswordCommand}"
+                            Content="Update Password"
+                            HorizontalAlignment="Left"
+                            IsEnabled="{Binding !IsBusy}" />
+
+                        <!--  Busy indicator  -->
+                        <ProgressBar
+                            Height="3"
+                            IsIndeterminate="True"
+                            IsVisible="{Binding IsBusy}" />
+
+                    </StackPanel>
+                </shadUi:Card>
+
+                <!--  ── Logout ────────────────────────────────────────────────────────  -->
+                <!--  MOVED from DashboardViewModel — logout lives on the Profile tab.  -->
+                <shadUi:Card HasShadow="True">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="h4" Text="Session" />
+                        <Separator />
+                        <TextBlock Classes="muted" Text="Signing out will clear your cached session and return you to the login screen." />
+                        <Button
+                            Classes="Destructive"
+                            Command="{Binding LogoutCommand}"
+                            HorizontalAlignment="Left"
+                            IsEnabled="{Binding !IsBusy}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <LucideIcon Kind="LogOut" Size="14" />
+                                <TextBlock Text="Sign Out" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </shadUi:Card>
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

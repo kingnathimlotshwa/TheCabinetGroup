@@ -16,7 +16,6 @@ namespace TheCabinetGroup.Utils;
     Singleton(typeof(IAppwriteService), typeof(AppwriteService)),
     Singleton(typeof(ILoginCacheService), typeof(LoginCacheService)),
     Transient<AuthViewModel>,
-    Transient<DashboardViewModel>,
     Singleton<MainViewModel>,
     Import<IUtilitiesModule>,
     Singleton<IMessenger, WeakReferenceMessenger>

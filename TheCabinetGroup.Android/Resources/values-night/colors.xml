@@ -1,4 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <color name="splash_background">#212121</color>
+	<!-- Dark mode — near-black background, warm off-white logo -->
+	<color name="splash_background">#0A0A0A</color>
+	<color name="splash_logo">#E8E4DE</color>
+	<color name="splash_accent">#C8B89A</color>
 </resources>

@@ -24,7 +24,7 @@
                 Spacing="16"
                 Width="275">
                 <Viewbox MaxHeight="100" MaxWidth="150">
-                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/thecabinet.svg" />
                 </Viewbox>
                 <TextBlock
                     Classes="h4"
@@ -96,7 +96,7 @@
 
                 <!--  Header  -->
                 <Viewbox MaxHeight="100" MaxWidth="150">
-                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/thecabinet.svg" />
                 </Viewbox>
 
                 <TextBlock
@@ -180,7 +180,7 @@
                 <!--  Header  -->
 
                 <Viewbox MaxHeight="100" MaxWidth="150">
-                    <Svg Css="{Binding LogoColor}" Path="/Assets/theCabinet.svg" />
+                    <Svg Css="{Binding LogoColor}" Path="/Assets/thecabinet.svg" />
                 </Viewbox>
                 <TextBlock
                     Classes="h4"

@@ -1,21 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<resources>
-
-  <style name="MyTheme">
-  </style>
-
-  <style name="MyTheme.NoActionBar" parent="@style/Theme.AppCompat.NoActionBar">
-    <item name="android:windowActionBar">false</item>
-    <item name="android:windowBackground">@null</item>
-    <item name="android:windowNoTitle">true</item>
-    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-    <item name="android:windowSplashScreenAnimatedIcon">@drawable/avalonia_anim</item>
-    <item name="android:windowSplashScreenAnimationDuration">1000</item>
-    <item name="postSplashScreenTheme">@style/MyTheme.Main</item>
-
-  </style>
-  <style name="MyTheme.Main"
-         parent ="MyTheme.NoActionBar">
-    <item name="android:windowIsTranslucent">true</item>
-  </style>
+﻿<resources>
+	<style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+		<item name="android:windowBackground">@color/splash_background</item>
+		<item name="android:statusBarColor">@color/splash_background</item>
+		<item name="android:navigationBarColor">@color/splash_background</item>
+	</style>
+	<!-- 
+			Android 12+ SplashScreen API theme.
+			windowSplashScreenBackground  — fills the full screen
+			windowSplashScreenAnimatedIcon — the logo, centred in a circle
+			windowSplashScreenBrandingImage — optional wordmark below icon
+			postSplashScreenTheme — theme to switch to after splash exits
+		 -->
+	<style name="MyTheme.NoActionBar" parent="Theme.SplashScreen">
+		<item name="windowSplashScreenBackground">@color/splash_background</item>
+		<item name="windowSplashScreenAnimatedIcon">@drawable/avalonia_anim</item>
+		<item name="windowSplashScreenAnimationDuration">600</item>
+		<item name="postSplashScreenTheme">@style/AppTheme</item>
+		<item name="android:windowLightStatusBar">true</item>
+		<item name="android:windowLightNavigationBar">true</item>
+	</style>
 </resources>

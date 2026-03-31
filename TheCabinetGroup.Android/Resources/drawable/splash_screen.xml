@@ -1,13 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Splash screen background for API < 31.
+    Centred logo on the themed background colour.
+    The logo colour adapts automatically via @color/splash_logo
+    which resolves from values/colors.xml (light) or
+    values-night/colors.xml (dark) based on system theme.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-
-  <item>
-    <color android:color="@color/splash_background"/>
-  </item>
-
-  <item android:drawable="@drawable/icon"
-        android:width="120dp"
-        android:height="120dp"
-        android:gravity="center" />
+	
+	<!-- Solid background -->
+	<item>
+		<shape android:shape="rectangle">
+			<solid android:color="@color/splash_background" />
+		</shape>
+	</item>
+	
+	<!-- Centred logo — 280dp wide matches ~60% of a typical phone screen -->
+	<item
+			android:gravity="center"
+			android:width="280dp"
+			android:height="118dp">
+		<bitmap
+				android:gravity="center"
+				android:src="@drawable/splash_logo" />
+	</item>
 
 </layer-list>

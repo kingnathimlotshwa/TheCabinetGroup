@@ -29,13 +29,13 @@ public partial class MainViewModel : ViewModelBase
     private const string LoginDialogId = "LoginDialogHost";
     private const string MainDialogId = "MainDialogHost";
 
-    [ObservableProperty] private bool _isBusy;
-    [ObservableProperty] private string _errorMessage = string.Empty;
-
     // ── MEMBER ─────────────────────────────────────────────────────────
     [ObservableProperty] public string _memberName = string.Empty;
     [ObservableProperty] public string _memberRole = string.Empty;
     [ObservableProperty] public bool _isAdmin = false;
+
+    // NEW: ProfileViewModel exposed so MainView can bind to it
+    [ObservableProperty] private UserProfileViewModel _profileVm = null!;
 
     public event Action? LogoutRequested;
 
@@ -43,19 +43,24 @@ public partial class MainViewModel : ViewModelBase
         IAppwriteService appwrite,
         ILoginCacheService cache,
         AuthViewModel authVm,
-        ToastManager toastManager)
+        ToastManager toastManager): base(toastManager)
     {
         _appwrite = appwrite;
         _cache = cache;
         _authVm = authVm;
         _toastManager = toastManager;
         _authVm.LoginSucceeded += OnLoginSucceeded;
+
+        // NEW: initialise the ProfileViewModel (shares the same ToastManager)
+        ProfileVm = new UserProfileViewModel(appwrite, toastManager);
+        ProfileVm.LogoutRequested += OnLogoutRequested;
     }
 
     // Design-time constructor
     public MainViewModel() : this(null!, null!, null!, null!)
     {
     }
+
 
     // ── Triggered by MainWindow.axaml Opened event ─────────────────────────
 
@@ -104,29 +109,23 @@ public partial class MainViewModel : ViewModelBase
         MemberName = user.FullName;
         MemberRole = user.Role;
         IsAdmin = user.IsAdmin;
+
+        // NEW: populate the Profile tab with the authenticated user's data
+        ProfileVm.SetUser(user);
         if (DialogHost.IsDialogOpen(LoginDialogId))
             DialogHost.Close(LoginDialogId, user);
     }
 
-    // ── Shell commands ─────────────────────────────────────────────────────
-    [RelayCommand]
-    private void ShowToast()
+    // ── Logout handler ────────────────────────────────────────────────────
+    private void OnLogoutRequested()
     {
-        ToastManager?.CreateToast($"Hello, {CurrentMember?.FullName ?? "there"}!")
-                    .Show(Notification.Info);
-    }
+        CurrentMember = null;
+        IsAuthenticated = false;
+        MemberName = string.Empty;
+        MemberRole = string.Empty;
+        IsAdmin = false;
 
-    [RelayCommand]
-    private async Task ShowConfirmDialog()
-    {
-        var vm = new ConfirmDialogViewModel("Confirm Action", "Are you sure you want to proceed?");
-        var view = new ConfirmDialogView { DataContext = vm };
-
-        var result = await DialogHost.Show(view, MainDialogId);
-
-        if (result is true)
-            ToastManager?.CreateToast("Confirmed").WithContent("Action was confirmed.").ShowSuccess();
-        else
-            ToastManager?.CreateToast("Cancelled").WithContent("Action was cancelled.").ShowWarning();
+        var loginPage = new LoginPage { DataContext = _authVm };
+        _ = DialogHost.Show(loginPage, LoginDialogId);
     }
 }

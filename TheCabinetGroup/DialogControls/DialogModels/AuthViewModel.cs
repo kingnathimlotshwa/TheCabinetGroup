@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Appwrite;
-
 using Avalonia.Media;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -24,7 +22,6 @@ public partial class AuthViewModel : ViewModelBase
 {
     private readonly IAppwriteService _appwrite;
     private readonly ILoginCacheService _cache;
-    private readonly ToastManager _toast;
 
     // Events consumed by MainWindow to swap views
     public event Action<AppUser>? LoginSucceeded;
@@ -33,8 +30,6 @@ public partial class AuthViewModel : ViewModelBase
     [ObservableProperty] private string _logoColor = ".Black { fill: #54A9FF; }";
 
     // ── Shared ──
-    [ObservableProperty] private string _errorMessage = string.Empty;
-    [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _currentView = "Login";
 
     // ── Login ──
@@ -71,11 +66,10 @@ public partial class AuthViewModel : ViewModelBase
     public AuthViewModel(
         IAppwriteService appwriteService,
         ILoginCacheService loginCacheService,
-        ToastManager toastManager)
+        ToastManager toast) : base(toast)
     {
         _appwrite = appwriteService;
         _cache = loginCacheService;
-        _toast = toastManager;
         ChangeLogoColor();
     }
 
@@ -107,14 +101,12 @@ public partial class AuthViewModel : ViewModelBase
         await RunSafeAsync(async () =>
         {
             await _appwrite.LoginWithEmailAsync(LoginEmail, LoginPassword);
-            var member = await _appwrite.GetCurrentUserAsync()
+            var user = await _appwrite.GetCurrentUserAsync()
                          ?? throw new Exception("Profile not found. Contact your admin.");
             PersistSessionIfRequired(LoginEmail, LoginPassword);
 
-            _toast.CreateToast($"Welcome back, {member.FullName}!")
-                  .WithDelay(2)
-                  .ShowSuccess();
-            LoginSucceeded?.Invoke(member);
+            ShowSuccess($"Welcome back, {user.FullName}!");
+            LoginSucceeded?.Invoke(user);
         });
     }
 
@@ -124,9 +116,7 @@ public partial class AuthViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(LoginPhone))
         {
             ErrorMessage = "Enter your phone number (+27XXXXXXXXX).";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError(ErrorMessage);
             return;
         }
 
@@ -134,8 +124,7 @@ public partial class AuthViewModel : ViewModelBase
         {
             _otpUserId = await _appwrite.RequestPhoneOtpAsync(LoginPhone);
             OtpSent = true;
-            _toast.CreateToast("OTP sent to " + LoginPhone)
-                  .ShowInfo();
+            ShowInfo($"OTP sent to {LoginPhone}", 3);
         });
     }
 
@@ -145,9 +134,7 @@ public partial class AuthViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(PhoneOtp))
         {
             ErrorMessage = "Enter the OTP sent to your phone.";
-            _toast.CreateToast($"{ErrorMessage}")
-                  .WithDelay(2)
-                  .ShowError();
+            ShowError(ErrorMessage);
             return;
         }
 
@@ -157,8 +144,7 @@ public partial class AuthViewModel : ViewModelBase
             var user = await _appwrite.GetCurrentUserAsync()
                        ?? throw new Exception("Profile not found.");
             //OTP login has no email/password to cache — remember me not supported for OTP
-            _toast.CreateToast("Welcome back, " + user.FullName + "!")
-                  .ShowSuccess();
+            ShowSuccess($"Welcome back, {user.FullName}!");
             LoginSucceeded?.Invoke(user);
         });
     }
@@ -210,20 +196,19 @@ public partial class AuthViewModel : ViewModelBase
             var userId = await _appwrite.RegisterAsync(RegEmail, RegPassword, RegFullName);
             await _appwrite.LoginWithEmailAsync(RegEmail, RegPassword);
             await _appwrite.SaveUserProfileAsync(new UserProfile
-                                                 {
-                                                     UserId = _appwrite.CurrentUserId!,
-                                                     IdNumber = RegIdNumber,
-                                                     Role = "member",
-                                                     BankAccount = RegBankAccount,
-                                                     BankName = $"{RegBank.BankName}",
-                                                     BankBranchCode = $"{RegBank.NationalBranchCode}"
-                                                 });
+            {
+                UserId = _appwrite.CurrentUserId!,
+                IdNumber = RegIdNumber,
+                Role = "member",
+                BankAccount = RegBankAccount,
+                BankName = $"{RegBank.BankName}",
+                BankBranchCode = $"{RegBank.NationalBranchCode}"
+            });
 
             await _appwrite.SendEmailVerificationAsync("https://yourstokvelapp.com/verify");
 
             var user = await _appwrite.GetCurrentUserAsync();
-            _toast.CreateToast($"Welcome, {user.FullName}! Check your email to verify.")
-                  .ShowSuccess();
+            ShowSuccess($"Welcome, {user.FullName}! Check your email to verify.");
             LoginSucceeded?.Invoke(user);
         });
     }
@@ -243,8 +228,7 @@ public partial class AuthViewModel : ViewModelBase
         {
             await _appwrite.ForgotPasswordAsync(ForgotEmail, "https://localhost/reset-password");
             RecoveryEmailSent = true;
-            _toast.CreateToast("Recovery email sent to " + ForgotEmail).WithDelay(3)
-                  .ShowInfo();
+            ShowInfo($"Recovery email sent to {ForgotEmail}", 3);
         });
     }
 
@@ -263,8 +247,7 @@ public partial class AuthViewModel : ViewModelBase
             OldPassword = string.Empty;
             NewPassword = string.Empty;
             ConfirmNewPassword = string.Empty;
-            _toast.CreateToast("Password changed successfully!").WithDelay(3)
-                  .ShowSuccess();
+            ShowSuccess("Password changed successfully!", 3);
         });
     }
 
@@ -289,13 +272,13 @@ public partial class AuthViewModel : ViewModelBase
         RegConfirmPassword = string.Empty;
         RegBankAccount = string.Empty;
         RegBanks = Enum.GetValues<SouthAfricanBank>().Select(bank => new BankModel
-                                                                     {
-                                                                         Abbreviation = bank.GetAbbreviation(),
-                                                                         BankName = bank.GetBankName(),
-                                                                         NationalBranchCode =
-                                                                             bank.GetNationalBranchCode()
-                                                                     })
-                       .ToList();
+            {
+                Abbreviation = bank.GetAbbreviation(),
+                BankName = bank.GetBankName(),
+                NationalBranchCode =
+                    bank.GetNationalBranchCode()
+            })
+            .ToList();
         RegBank = RegBanks[0];
         CurrentView = "Register";
     }
@@ -311,12 +294,6 @@ public partial class AuthViewModel : ViewModelBase
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private void ShowError(string message)
-    {
-        ErrorMessage = message;
-        _toast.CreateToast(message).WithDelay(2).ShowError();
-    }
-
     /// <summary>
     /// Writes the current session to disk when RememberMe is ticked.
     /// The session remains valid for <see cref="LoginCacheService.CacheDuration"/>.
@@ -325,33 +302,12 @@ public partial class AuthViewModel : ViewModelBase
     {
         if (!RememberMe) return;
         _cache.Save(new SessionCache
-                    {
-                        Email = email,
-                        Password = password,
-                        ExpiresAt = DateTime.UtcNow.Add(LoginCacheService.CacheDuration),
-                        RememberMe = true
-                    });
+        {
+            Email = email,
+            Password = password,
+            ExpiresAt = DateTime.UtcNow.Add(LoginCacheService.CacheDuration),
+            RememberMe = true
+        });
     }
 
-    private async Task RunSafeAsync(Func<Task> action)
-    {
-        ErrorMessage = string.Empty;
-        IsBusy = true;
-        try
-        {
-            await action();
-        }
-        catch (AppwriteException ex)
-        {
-            ShowError(ex.Message ?? "An Appwrite error occurred.");
-        }
-        catch (Exception ex)
-        {
-            ShowError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
 }

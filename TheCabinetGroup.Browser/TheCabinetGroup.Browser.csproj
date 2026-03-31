@@ -16,9 +16,7 @@
 	these transitive WASM assets. VersionOverride bypasses CPM
 	so the correct .wasm binaries are included in the publish output.
 -->
-		<PackageReference Include="SkiaSharp.NativeAssets.WebAssembly"
-		                  VersionOverride="2.88.9"
-		                  ExcludeAssets="none" />
+		<PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" VersionOverride="3.119.2" ExcludeAssets="none" />
 		<PackageReference Include="HarfBuzzSharp.NativeAssets.WebAssembly"
 		                  VersionOverride="8.3.1.3"
 		                  ExcludeAssets="none" />

@@ -45,7 +45,8 @@ public class ConfigurationLoader
         }
 
         // User Secrets (Desktop development only — not available on Android)
-        var env = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+        var userId = Environment.GetEnvironmentVariable("APPWRITE_PROJECTID", EnvironmentVariableTarget.User);
+        var env = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Development";
         if (env.Equals("Development", StringComparison.OrdinalIgnoreCase))
             builder.AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true);
 
@@ -54,13 +55,13 @@ public class ConfigurationLoader
 
         _cached = new AppwriteConfig
         {
-            Endpoint   = section["Endpoint"]   ?? "https://cloud.appwrite.io/v1",
+            Endpoint   = section["Endpoint"]   ?? "https://fra.cloud.appwrite.io/v1",
             ProjectId  = section["ProjectId"]  ?? string.Empty,
             DatabaseId = section["DatabaseId"] ?? string.Empty,
             BucketId   = section["BucketId"]   ?? string.Empty,
             Collections = new CollectionIds
             {
-                Profiles       = section["Collections:Members"]       ?? "members",
+                Profiles       = section["Collections:Profiles"]       ?? "profiles",
                 Contributions = section["Collections:Contributions"] ?? "contributions",
                 Payments      = section["Collections:Payments"]      ?? "payments",
                 Penalties     = section["Collections:Penalties"]     ?? "penalties",

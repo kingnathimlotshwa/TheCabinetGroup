@@ -10,6 +10,7 @@
     xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:views="clr-namespace:TheCabinetGroup.Views"
     xmlns:vm="using:TheCabinetGroup.ViewModels"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Design.DataContext>
@@ -44,7 +45,10 @@
                                     VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
-                        <shadUi:Card HasShadow="True" IsVisible="{Binding IsAuthenticated}">
+                        <shadUi:Card
+                            HasShadow="True"
+                            IsVisible="{Binding IsAuthenticated}"
+                            Margin="0,10,0,0">
                             <StackPanel Spacing="5">
                                 <TextBlock Classes="h1" Text="{Binding MemberName}" />
                                 <TextBlock Classes="h4" Text="{Binding MemberRole}" />
@@ -100,8 +104,20 @@
                             </StackPanel>
                         </TabItem.Header>
                     </TabItem>
+                    <TabItem IsVisible="{Binding IsAuthenticated}">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <LucideIcon Kind="User" Size="18" />
+                                <TextBlock
+                                    IsVisible="{OnFormFactor Mobile=False,
+                                                             Desktop=True}"
+                                    Text="Profile"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:UserProfilePage DataContext="{Binding ProfileVm}" />
+                    </TabItem>
                 </TabControl>
-
             </dialogHost:DialogHost>
         </dialogHost:DialogHost>
         <shadUi:ToastHost

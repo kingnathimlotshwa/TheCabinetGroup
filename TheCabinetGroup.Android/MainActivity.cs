@@ -10,9 +10,9 @@ using Avalonia.Media.Fonts;
 namespace TheCabinetGroup.Android;
 
 [Activity(
-    Label = "TheCabinetGroup.Android",
-    Theme = "@style/MyTheme.NoActionBar",
-    Icon = "@drawable/icon",
+    Label = "The Cabinet Group",
+    Theme = "@style/AppTheme",
+    Icon = "@drawable/thecabinet",
     MainLauncher = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<App>

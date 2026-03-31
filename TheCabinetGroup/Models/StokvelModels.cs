@@ -136,7 +136,7 @@ public class DashboardSummary
 /// </summary>
 public class AppwriteConfig
 {
-    public string Endpoint { get; set; } = "https://cloud.appwrite.io/v1";
+    public string Endpoint { get; set; } = "https://fra.cloud.appwrite.io/v1";
     public string ProjectId { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string DevKey { get; set; } = string.Empty;
