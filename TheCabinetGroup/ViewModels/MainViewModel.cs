@@ -124,6 +124,7 @@ public partial class MainViewModel : ViewModelBase
         MemberName = string.Empty;
         MemberRole = string.Empty;
         IsAdmin = false;
+        ProfileVm = null;
 
         var loginPage = new LoginPage { DataContext = _authVm };
         _ = DialogHost.Show(loginPage, LoginDialogId);

@@ -31,6 +31,8 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Stretch"
                     Margin="5,15,5,15"
+                    Padding="{OnFormFactor Desktop='0,10,0,0',
+                                           Mobile='0,0,0,10'}"
                     TabStripPlacement="{OnFormFactor Mobile=Bottom,
                                                      Desktop=Top}"
                     Theme="{StaticResource ExtendedTabControl}">
@@ -45,10 +47,7 @@
                                     VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
-                        <shadUi:Card
-                            HasShadow="True"
-                            IsVisible="{Binding IsAuthenticated}"
-                            Margin="0,10,0,0">
+                        <shadUi:Card HasShadow="True" IsVisible="{Binding IsAuthenticated}">
                             <StackPanel Spacing="5">
                                 <TextBlock Classes="h1" Text="{Binding MemberName}" />
                                 <TextBlock Classes="h4" Text="{Binding MemberRole}" />

@@ -14,7 +14,7 @@
     <Design.DataContext>
         <vm:UserProfileViewModel />
     </Design.DataContext>
-    <Panel Margin="0,10,0,0">
+    <Panel>
         <ScrollViewer
             HorizontalAlignment="Center"
             HorizontalScrollBarVisibility="Disabled"
@@ -26,14 +26,20 @@
                     HorizontalAlignment="Center"
                     Orientation="Horizontal"
                     Spacing="8">
-                    <Button
-                        Classes="Secondary"
+                    <ToggleButton
+                        Classes="Outline"
                         Command="{Binding ShowDetailsCommand}"
-                        Content="Personal Details" />
-                    <Button
-                        Classes="Secondary"
+                        Content="Personal Details"
+                        HorizontalAlignment="Center"
+                        IsChecked="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Details}"
+                        VerticalAlignment="Center" />
+                    <ToggleButton
+                        Classes="Outline"
                         Command="{Binding ShowSecurityCommand}"
-                        Content="Security" />
+                        Content="Security"
+                        HorizontalAlignment="Center"
+                        IsChecked="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Security}"
+                        VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!--  ── Error banner ─────────────────────────────────────────────  -->
@@ -64,84 +70,130 @@
                         <Separator />
 
                         <!--  Full Name  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Full Name" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <LucideIcon
+                                Kind="SquareUser"
+                                Size="20"
+                                VerticalAlignment="Center" />
                             <!--  READ: plain text when not editing  -->
                             <TextBlock
+                                Classes="Small"
                                 IsVisible="{Binding !IsEditMode}"
                                 Text="{Binding FullName}"
-                                TextWrapping="Wrap" />
+                                TextWrapping="Wrap"
+                                VerticalAlignment="Center" />
                             <!--  EDIT: text input  -->
                             <TextBox
                                 IsVisible="{Binding IsEditMode}"
                                 Text="{Binding FullName}"
+                                VerticalAlignment="Center"
                                 Watermark="Enter your full name" />
                         </StackPanel>
 
                         <!--  Email (read-only — managed by Appwrite Auth)  -->
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Email Address" />
-                            <TextBlock Text="{Binding Email}" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <LucideIcon
+                                    Kind="AtSign"
+                                    Size="20"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Classes="Small"
+                                    Text="{Binding Email}"
+                                    VerticalAlignment="Center" />
+
+                            </StackPanel>
                             <TextBlock
-                                Classes="muted"
+                                Classes="Muted"
                                 FontSize="11"
                                 IsVisible="{Binding IsEditMode}"
-                                Text="Email is managed by your account and cannot be changed here." />
+                                Text="Email is managed by your account and cannot be changed here."
+                                VerticalAlignment="Center" />
                         </StackPanel>
 
                         <!--  Phone (read-only — managed by Appwrite Auth)  -->
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Phone Number" />
-                            <TextBlock Text="{Binding Phone}" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <LucideIcon
+                                    Kind="Smartphone"
+                                    Size="20"
+                                    VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Phone}" VerticalAlignment="Center" />
+                            </StackPanel>
                             <TextBlock
-                                Classes="muted"
+                                Classes="Muted"
                                 FontSize="11"
                                 IsVisible="{Binding IsEditMode}"
-                                Text="Phone is linked to your account and cannot be changed here." />
+                                Text="Phone is linked to your account and cannot be changed here."
+                                VerticalAlignment="Center" />
                         </StackPanel>
 
                         <!--  ID Number  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="South African ID Number" />
-                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding IdNumber, FallbackValue='—'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <LucideIcon
+                                Kind="IdCard"
+                                Size="20"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                IsVisible="{Binding !IsEditMode}"
+                                Text="{Binding IdNumber, FallbackValue='—'}"
+                                VerticalAlignment="Center" />
                             <TextBox
                                 IsVisible="{Binding IsEditMode}"
                                 MaxLength="13"
                                 Text="{Binding IdNumber}"
+                                VerticalAlignment="Center"
                                 Watermark="Enter your 13-digit ID number" />
                         </StackPanel>
 
                         <Separator />
 
-                        <TextBlock Classes="h4" Text="Banking Details" />
+                        <TextBlock Classes="h3" Text="Banking Details" />
 
                         <!--  Bank Name dropdown  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Bank" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <LucideIcon
+                                Kind="Landmark"
+                                Size="20"
+                                VerticalAlignment="Center" />
                             <!--  READ  -->
-                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding SelectedBank.BankName, FallbackValue='—'}" />
+                            <TextBlock
+                                IsVisible="{Binding !IsEditMode}"
+                                Text="{Binding SelectedBank.BankName, FallbackValue='—'}"
+                                VerticalAlignment="Center" />
                             <!--  EDIT  -->
                             <ComboBox
                                 DisplayMemberBinding="{Binding BankName}"
                                 IsVisible="{Binding IsEditMode}"
                                 ItemsSource="{Binding AvailableBanks}"
                                 SelectedItem="{Binding SelectedBank}"
+                                VerticalAlignment="Center"
                                 Width="300" />
                         </StackPanel>
 
                         <!--  Branch Code (auto-filled from selection, read-only)  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Universal Branch Code" />
-                            <TextBlock Text="{Binding SelectedBank.NationalBranchCode, FallbackValue='—'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <LucideIcon
+                                Kind="Split"
+                                Size="20"
+                                VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding SelectedBank.NationalBranchCode, FallbackValue='—'}" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <!--  Bank Account Number  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="label" Text="Account Number" />
-                            <TextBlock IsVisible="{Binding !IsEditMode}" Text="{Binding BankAccount, FallbackValue='—'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <LucideIcon
+                                Kind="CreditCard"
+                                Size="20"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                IsVisible="{Binding !IsEditMode}"
+                                Text="{Binding BankAccount, FallbackValue='—'}"
+                                VerticalAlignment="Center" />
                             <TextBox
                                 IsVisible="{Binding IsEditMode}"
                                 Text="{Binding BankAccount}"
+                                VerticalAlignment="Center"
                                 Watermark="Enter your bank account number" />
                         </StackPanel>
 
@@ -149,22 +201,23 @@
 
                             <!--  Cancel button — visible only in edit mode  -->
                             <Button
-                                Classes="outline"
+                                Classes="Outline"
                                 Command="{Binding CancelEditCommand}"
                                 Content="Cancel"
                                 IsVisible="{Binding IsEditMode}" />
 
                             <!--  Save button — visible only in edit mode  -->
                             <Button
-                                Classes="default"
+                                Classes="Primary"
                                 Command="{Binding SaveProfileCommand}"
                                 Content="Save Changes"
                                 IsEnabled="{Binding !IsBusy}"
-                                IsVisible="{Binding IsEditMode}" />
+                                IsVisible="{Binding IsEditMode}"
+                                shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}" />
 
                             <!--  Edit button — visible when not in edit mode  -->
                             <Button
-                                Classes="outline"
+                                Classes="Outline"
                                 Command="{Binding ToggleEditModeCommand}"
                                 IsVisible="{Binding !IsEditMode}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -173,12 +226,6 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-
-                        <!--  Busy indicator  -->
-                        <ProgressBar
-                            Height="3"
-                            IsIndeterminate="True"
-                            IsVisible="{Binding IsBusy}" />
 
                     </StackPanel>
                 </shadUi:Card>
@@ -220,17 +267,12 @@
                             shadUi:ControlAssist.Label="Confirm password" />
 
                         <Button
-                            Classes="default"
+                            Classes="Primary"
                             Command="{Binding ChangePasswordCommand}"
                             Content="Update Password"
                             HorizontalAlignment="Left"
-                            IsEnabled="{Binding !IsBusy}" />
-
-                        <!--  Busy indicator  -->
-                        <ProgressBar
-                            Height="3"
-                            IsIndeterminate="True"
-                            IsVisible="{Binding IsBusy}" />
+                            IsEnabled="{Binding !IsBusy}"
+                            shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}" />
 
                     </StackPanel>
                 </shadUi:Card>
@@ -241,12 +283,13 @@
                     <StackPanel Spacing="10">
                         <TextBlock Classes="h4" Text="Session" />
                         <Separator />
-                        <TextBlock Classes="muted" Text="Signing out will clear your cached session and return you to the login screen." />
+                        <TextBlock Classes="Muted" Text="Signing out will clear your cached session and return you to the login screen." />
                         <Button
                             Classes="Destructive"
                             Command="{Binding LogoutCommand}"
                             HorizontalAlignment="Left"
-                            IsEnabled="{Binding !IsBusy}">
+                            IsEnabled="{Binding !IsBusy}"
+                            shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <LucideIcon Kind="LogOut" Size="14" />
                                 <TextBlock Text="Sign Out" VerticalAlignment="Center" />
