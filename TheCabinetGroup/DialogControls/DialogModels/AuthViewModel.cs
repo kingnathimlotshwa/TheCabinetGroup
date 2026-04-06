@@ -226,7 +226,7 @@ public partial class AuthViewModel : ViewModelBase
 
         await RunSafeAsync(async () =>
         {
-            await _appwrite.ForgotPasswordAsync(ForgotEmail, "https://localhost/reset-password");
+            await _appwrite.ForgotPasswordAsync(ForgotEmail, "https://eloquent-starburst-fd43e0.netlify.app");
             RecoveryEmailSent = true;
             ShowInfo($"Recovery email sent to {ForgotEmail}", 3);
         });

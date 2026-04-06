@@ -114,7 +114,7 @@
                                     VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
-                        <views:UserProfilePage DataContext="{Binding ProfileVm}" />
+                        <views:UserProfilePage DataContext="{Binding ProfileVm}" IsVisible="{Binding $parent[TabControl].((vm:MainViewModel)DataContext).IsAuthenticated}" />
                     </TabItem>
                 </TabControl>
             </dialogHost:DialogHost>

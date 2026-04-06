@@ -111,7 +111,10 @@ public partial class MainViewModel : ViewModelBase
         IsAdmin = user.IsAdmin;
 
         // NEW: populate the Profile tab with the authenticated user's data
-        ProfileVm.SetUser(user);
+        // CHANGED: Guard against ProfileVm being null in edge cases
+        if (ProfileVm is not null)
+            ProfileVm.SetUser(user);
+
         if (DialogHost.IsDialogOpen(LoginDialogId))
             DialogHost.Close(LoginDialogId, user);
     }
@@ -124,7 +127,12 @@ public partial class MainViewModel : ViewModelBase
         MemberName = string.Empty;
         MemberRole = string.Empty;
         IsAdmin = false;
-        ProfileVm = null;
+
+        // CHANGED: Re-create ProfileVm instead of nulling it, so OnLoginSucceeded
+        // can safely call ProfileVm.SetUser() after the next login.
+        // Also re-subscribe the logout handler on the new instance.
+        ProfileVm = new UserProfileViewModel(_appwrite, _toastManager);
+        ProfileVm.LogoutRequested += OnLogoutRequested;
 
         var loginPage = new LoginPage { DataContext = _authVm };
         _ = DialogHost.Show(loginPage, LoginDialogId);
