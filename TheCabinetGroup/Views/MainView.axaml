@@ -67,7 +67,7 @@
                         </TabItem.Header>
                     </TabItem>
 
-                    <TabItem>
+                    <TabItem IsVisible="{Binding IsAuthenticated}">
                         <TabItem.Header>
                             <StackPanel Orientation="Horizontal" Spacing="2">
                                 <LucideIcon Kind="Wallet" Size="18" />
@@ -78,6 +78,7 @@
                                     VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
+                        <views:PaymentPage DataContext="{Binding PaymentVm}" IsVisible="{Binding $parent[TabControl].((vm:MainViewModel)DataContext).IsAuthenticated}" />
                     </TabItem>
                     <TabItem>
                         <TabItem.Header>

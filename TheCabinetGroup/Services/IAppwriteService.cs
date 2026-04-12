@@ -42,15 +42,20 @@ public interface IAppwriteService
     /// Creates a new document or updates existing one (upsert).
     /// </summary>
     Task SaveUserProfileAsync(UserProfile profile);
-    // Contributions
-    Task<List<Contribution>> GetMyContributionsAsync(string memberId);
-    Task<double> GetTotalContributedAsync(string memberId);
 
     // ── Payments ──────────────────────────────────────────────────────────────
-    Task<Payment> SubmitPaymentAsync(string userId, double amount,
-                                     string? contributionId = null, string? notes = null);
+    // CHANGED: Removed contributionId parameter — contributions are no longer supported, only payments
+    Task<Payment> SubmitPaymentAsync(
+        string userId,
+        double amount,
+        string? proofFileId,
+        string? period,
+        bool? isPenaltyPayment = false,
+        string? notes = null);
     Task<string> UploadProofOfPaymentAsync(string paymentId, string userId,
                                            Stream fileStream, string fileName);
+
+    Task<string> UploadFileOnlyAsync(Stream fileStream, string fileName);
     Task<string> GetProofOfPaymentUrlAsync(string fileId);
     Task<List<Payment>> GetMyPaymentsAsync(string userId);
     Task<List<Payment>> GetPaymentsByStatusAsync(string userId, string status);

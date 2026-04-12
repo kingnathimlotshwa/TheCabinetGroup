@@ -18,7 +18,7 @@ public partial class App : Application
         var vm = provider.GetService<MainViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            DisableAvaloniaDataAnnotationValidation();
+            //DisableAvaloniaDataAnnotationValidation();
             desktop.MainWindow = new MainWindow { DataContext = vm };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)

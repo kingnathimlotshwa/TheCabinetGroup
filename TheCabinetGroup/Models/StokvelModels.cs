@@ -1,15 +1,16 @@
 ﻿using System;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace TheCabinetGroup.Models;
 
 public class Payment
 {
     public string Id { get; set; } = string.Empty;
-    public string MemberId { get; set; } = string.Empty;
-    public string? ContributionId { get; set; }
+    public string UserId { get; set; } = string.Empty;
     public double Amount { get; set; }
     public DateTime PaymentDate { get; set; }
     public string? ProofFileId { get; set; }
+    public string? Period { get; set; } = DateTime.Now.ToString("MMMM yyyy");
     public string Status { get; set; } = "pending";
     public string? ApprovedBy { get; set; }
     public DateTime? ApprovedAt { get; set; }
@@ -24,60 +25,37 @@ public class Payment
     };
 
     public bool HasProof => !string.IsNullOrEmpty(ProofFileId);
+    public bool IsPenaltyPayment { get; set; } = false;
 }
 
-public class Contribution
-{
-    public string Id { get; set; } = string.Empty;
-    public string MemberId { get; set; } = string.Empty;
-    public double Amount { get; set; }
-    public DateTime ContributionDate { get; set; }
-    public DateTime DueDate { get; set; }
-    public string Status { get; set; } = "pending";
-    public string? Notes { get; set; }
-}
 public class AppUser
 {
-    public string  Id          { get; set; } = string.Empty;
-    public string  FullName    { get; set; } = string.Empty;
-    public string  Email       { get; set; } = string.Empty;
-    public string  Phone       { get; set; } = string.Empty;
-    public string  IdNumber    { get; set; } = string.Empty;
-    public string  Role        { get; set; } = "member";
+    public string Id { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string IdNumber { get; set; } = string.Empty;
+    public string Role { get; set; } = "member";
     public string? BankAccount { get; set; }
-    public string? BankName    { get; set; }
-    public bool    IsAdmin     => Role == "admin";
+    public string? BankName { get; set; }
+    public string? BankBranchCode { get; set; }
+    public bool IsAdmin => Role == "admin";
 }
 
 public class UserProfile
 {
-    public string  UserId      { get; set; } = string.Empty;
-    public string  IdNumber    { get; set; } = string.Empty;
-    public string  Role        { get; set; } = "member";
-    public string? BankAccount { get; set; }
-    public string? BankName    { get; set; }
-    public string? BankBranchCode    { get; set; }
-}
-
-public class Member
-{
-    public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
-    public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
     public string IdNumber { get; set; } = string.Empty;
-    public DateTime JoinDate { get; set; }
-    public bool IsActive { get; set; } = true;
     public string Role { get; set; } = "member";
     public string? BankAccount { get; set; }
     public string? BankName { get; set; }
+    public string? BankBranchCode { get; set; }
 }
 
 public class Penalty
 {
     public string Id { get; set; } = string.Empty;
-    public string MemberId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Reason { get; set; } = string.Empty;
     public double Amount { get; set; }
     public DateTime PenaltyDate { get; set; }
@@ -153,7 +131,6 @@ public class AppwriteConfig
 public class CollectionIds
 {
     public string Profiles { get; set; } = "profiles";
-    public string Contributions { get; set; } = "contributions";
     public string Payments { get; set; } = "payments";
     public string Penalties { get; set; } = "penalties";
     public string Settings { get; set; } = "stokvel_settings";

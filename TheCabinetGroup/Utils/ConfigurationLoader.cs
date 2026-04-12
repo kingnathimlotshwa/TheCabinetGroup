@@ -62,7 +62,6 @@ public class ConfigurationLoader
             Collections = new CollectionIds
             {
                 Profiles       = section["Collections:Profiles"]       ?? "profiles",
-                Contributions = section["Collections:Contributions"] ?? "contributions",
                 Payments      = section["Collections:Payments"]      ?? "payments",
                 Penalties     = section["Collections:Penalties"]     ?? "penalties",
                 Settings      = section["Collections:Settings"]      ?? "stokvel_settings"

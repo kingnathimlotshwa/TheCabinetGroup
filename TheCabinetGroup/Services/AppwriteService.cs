@@ -33,21 +33,21 @@ public class AppwriteService : IAppwriteService
 
     // ── Json Settings ───────────────────────────────────────────────────────────────
     private static readonly JsonSerializerSettings _jsonSettings = new()
-                                                                   {
-                                                                       NullValueHandling = NullValueHandling.Ignore,
-                                                                       DateFormatHandling =
-                                                                           DateFormatHandling.IsoDateFormat,
-                                                                       DateParseHandling = DateParseHandling.DateTime,
-                                                                       DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                                                                       ContractResolver = new CamelCasePropertyNamesContractResolver()
-                                                                   };
+    {
+        NullValueHandling = NullValueHandling.Ignore,
+        DateFormatHandling =
+            DateFormatHandling.IsoDateFormat,
+        DateParseHandling = DateParseHandling.DateTime,
+        DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     public AppwriteService(AppwriteConfig config)
     {
         _config = config;
         _client = new Client()
-                  .SetEndpoint(_config.Endpoint)
-                  .SetProject(_config.ProjectId);
+            .SetEndpoint(_config.Endpoint)
+            .SetProject(_config.ProjectId);
         // .SetKey(_config.ApiKey)
         // .SetSelfSigned(true); // set true only for self-hosted with no valid cert
 
@@ -97,7 +97,11 @@ public class AppwriteService : IAppwriteService
         if (CurrentSessionId is not null)
         {
             try { await _account.DeleteSession(sessionId: "current"); }
-            catch { /* already expired — ignore */ }
+            catch
+            {
+                /* already expired — ignore */
+            }
+
             CurrentUserId = null;
             CurrentSessionId = null;
         }
@@ -193,16 +197,16 @@ public class AppwriteService : IAppwriteService
         }
 
         return new AppUser
-               {
-                   Id = user.Id,
-                   FullName = user.Name,
-                   Email = user.Email,
-                   Phone = user.Phone,
-                   IdNumber = profile?.IdNumber ?? string.Empty,
-                   Role = profile?.Role ?? "member",
-                   BankAccount = profile?.BankAccount,
-                   BankName = profile?.BankName
-               };
+        {
+            Id = user.Id,
+            FullName = user.Name,
+            Email = user.Email,
+            Phone = user.Phone,
+            IdNumber = profile?.IdNumber ?? string.Empty,
+            Role = profile?.Role ?? "member",
+            BankAccount = profile?.BankAccount,
+            BankName = profile?.BankName
+        };
     }
 
     public async Task SaveUserProfileAsync(UserProfile profile)
@@ -213,47 +217,31 @@ public class AppwriteService : IAppwriteService
 
         var existing = await _databases.ListRows(
             databaseId: _config.DatabaseId,
-            tableId:    _config.Collections.Profiles,
-            queries:    [Query.Equal("userId", profile.UserId)]);
+            tableId: _config.Collections.Profiles,
+            queries: [Query.Equal("userId", profile.UserId)]);
 
         if (existing.Rows.Count > 0)
             await _databases.UpdateRow(
                 databaseId: _config.DatabaseId,
-                tableId:    _config.Collections.Profiles,
-                rowId:      existing.Rows[0].Id,
-                data:       data);
+                tableId: _config.Collections.Profiles,
+                rowId: existing.Rows[0].Id,
+                data: data);
         else
             await _databases.CreateRow(
                 databaseId: _config.DatabaseId,
-                tableId:    _config.Collections.Profiles,
-                rowId:      ID.Unique(),
-                data:       data);
-    }
-
-    // ───────────────── CONTRIBUTIONS ─────────────────
-
-    public async Task<List<Contribution>> GetMyContributionsAsync(string memberId)
-    {
-        var result = await _databases.ListRows(
-            databaseId: _config.DatabaseId,
-            tableId: _config.Collections.Contributions,
-            queries: [Query.Equal("memberId", memberId), Query.OrderDesc("dueDate")]);
-
-        return FromRowList<Contribution>(result);
-    }
-
-    public async Task<double> GetTotalContributedAsync(string memberId)
-    {
-        var contributions = await GetMyContributionsAsync(memberId);
-        return contributions.Where(c => c.Status == "approved").Sum(c => c.Amount);
+                tableId: _config.Collections.Profiles,
+                rowId: ID.Unique(),
+                data: data);
     }
 
     // ───────────────── PAYMENTS ─────────────────
 
     public async Task<Payment> SubmitPaymentAsync(
-        string memberId,
+        string userId,
         double amount,
-        string? contributionId = null,
+        string? proofFileId,
+        string? period,
+        bool? isPenaltyPayment = false,
         string? notes = null)
     {
         var doc = await _databases.CreateRow(
@@ -261,26 +249,28 @@ public class AppwriteService : IAppwriteService
             tableId: _config.Collections.Payments,
             rowId: ID.Unique(),
             data: new Dictionary<string, object>
-                  {
-                      ["memberId"] = memberId,
-                      ["contributionId"] = contributionId ?? string.Empty,
-                      ["amount"] = amount,
-                      ["paymentDate"] = DateTime.UtcNow.ToString("o"),
-                      ["status"] = "pending",
-                      ["notes"] = notes ?? string.Empty
-                  },
+            {
+                ["userId"] = userId,
+                ["proofFileId"] = proofFileId,
+                ["amount"] = amount,
+                ["period"] = period,
+                ["isPenaltyPayment"] = isPenaltyPayment,
+                ["paymentDate"] = DateTime.UtcNow.ToString("o"),
+                ["status"] = "pending",
+                ["notes"] = notes ?? string.Empty
+            },
             permissions: new List<string>
-                         {
-                             Permission.Read(Role.User(CurrentUserId!)),
-                             Permission.Read(Role.Team("admins")),
-                             Permission.Update(Role.Team("admins"))
-                         });
+            {
+                Permission.Read(Role.User(CurrentUserId!)),
+                Permission.Read(Role.Team("admins")),
+                Permission.Update(Role.Team("admins"))
+            });
 
         return FromRow<Payment>(doc);
     }
 
     public async Task<string> UploadProofOfPaymentAsync(
-        string paymentId, string memberId,
+        string paymentId, string userId,
         Stream fileStream, string fileName)
     {
         var file = await _storage.CreateFile(
@@ -288,16 +278,37 @@ public class AppwriteService : IAppwriteService
             fileId: ID.Unique(),
             file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
             permissions: new List<string>
-                         {
-                             Permission.Read(Role.User(CurrentUserId!)),
-                             Permission.Read(Role.Team("admins"))
-                         });
+            {
+                // CHANGED: Role.User(id) is not permitted by this bucket's ACL.
+                // Using Role.Users() (any authenticated user) and admins team instead.
+                Permission.Read(Role.Users()),
+                Permission.Read(Role.Team("admins"))});
 
         await _databases.UpdateRow(
             databaseId: _config.DatabaseId,
             tableId: _config.Collections.Payments,
             rowId: paymentId,
             data: new Dictionary<string, object> { ["proofFileId"] = file.Id });
+
+        return file.Id;
+    }
+
+    // CHANGED: Uploads a file to storage without requiring a paymentId.
+    // Used to obtain a fileId before calling SubmitPaymentAsync,
+    // so proof of payment is attached at creation rather than in a second step.
+    public async Task<string> UploadFileOnlyAsync(Stream fileStream, string fileName)
+    {
+        var file = await _storage.CreateFile(
+            bucketId: _config.BucketId,
+            fileId: ID.Unique(),
+            file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
+            permissions: new List<string>
+            {
+                // CHANGED: Role.User(id) is not permitted by this bucket's ACL.
+                // Using Role.Users() (any authenticated user) and admins team instead.
+                Permission.Read(Role.Users()),
+                Permission.Read(Role.Team("admins"))
+            });
 
         return file.Id;
     }
@@ -309,41 +320,41 @@ public class AppwriteService : IAppwriteService
         return Task.FromResult(url);
     }
 
-    public async Task<List<Payment>> GetMyPaymentsAsync(string memberId)
+    public async Task<List<Payment>> GetMyPaymentsAsync(string userId)
     {
         var result = await _databases.ListRows(
             databaseId: _config.DatabaseId,
             tableId: _config.Collections.Payments,
-            queries: [Query.Equal("memberId", memberId), Query.OrderDesc("paymentDate")]);
+            queries: [Query.Equal("userId", userId), Query.OrderDesc("paymentDate")]);
 
         return FromRowList<Payment>(result);
     }
 
-    public async Task<List<Payment>> GetPaymentsByStatusAsync(string memberId, string status)
+    public async Task<List<Payment>> GetPaymentsByStatusAsync(string userId, string status)
     {
         var result = await _databases.ListRows(
             databaseId: _config.DatabaseId,
             tableId: _config.Collections.Payments,
-            queries: [Query.Equal("memberId", memberId), Query.Equal("status", status)]);
+            queries: [Query.Equal("userId", userId), Query.Equal("status", status)]);
 
         return FromRowList<Payment>(result);
     }
 
     // ───────────────── PENALTIES ─────────────────
 
-    public async Task<List<Penalty>> GetMyPenaltiesAsync(string memberId)
+    public async Task<List<Penalty>> GetMyPenaltiesAsync(string userId)
     {
         var result = await _databases.ListRows(
             databaseId: _config.DatabaseId,
             tableId: _config.Collections.Penalties,
-            queries: [Query.Equal("memberId", memberId), Query.OrderDesc("penaltyDate")]);
+            queries: [Query.Equal("userId", userId), Query.OrderDesc("penaltyDate")]);
 
         return FromRowList<Penalty>(result);
     }
 
-    public async Task<double> GetOutstandingPenaltiesAsync(string memberId)
+    public async Task<double> GetOutstandingPenaltiesAsync(string userId)
     {
-        var penalties = await GetMyPenaltiesAsync(memberId);
+        var penalties = await GetMyPenaltiesAsync(userId);
         return penalties.Where(p => !p.IsPaid).Sum(p => p.Amount);
     }
 
@@ -361,10 +372,10 @@ public class AppwriteService : IAppwriteService
 
     // ───────────────── DASHBOARD SUMMARY ─────────────────
 
-    public async Task<DashboardSummary> GetDashboardSummaryAsync(string memberId)
+    public async Task<DashboardSummary> GetDashboardSummaryAsync(string userId)
     {
-        var paymentsTask = GetMyPaymentsAsync(memberId);
-        var penaltiesTask = GetMyPenaltiesAsync(memberId);
+        var paymentsTask = GetMyPaymentsAsync(userId);
+        var penaltiesTask = GetMyPenaltiesAsync(userId);
         var settingsTask = GetStokvelSettingsAsync();
 
         await Task.WhenAll(paymentsTask, penaltiesTask, settingsTask);
@@ -382,31 +393,27 @@ public class AppwriteService : IAppwriteService
         var monthsRemaining = settings?.MonthsRemaining ?? 0;
 
         return new DashboardSummary
-               {
-                   TotalContributed = totalContrib,
-                   TotalPenalties = totalPenalties,
-                   OutstandingPenalties = outstanding,
-                   TotalPayments = payments.Count,
-                   PendingPayments = payments.Count(p => p.Status == "pending"),
-                   NextDueDate = settings?.NextDueDate ?? DateTime.Today.AddDays(30),
-                   ProjectedFinalAmount = totalContrib + (avgAmount * monthsRemaining),
-                   LastPaymentAmount = lastAmount,
-                   AveragePaymentAmount = avgAmount,
-                   MonthsRemaining = monthsRemaining,
-                   GroupName = settings?.GroupName ?? "Stokvel"
-               };
+        {
+            TotalContributed = totalContrib,
+            TotalPenalties = totalPenalties,
+            OutstandingPenalties = outstanding,
+            TotalPayments = payments.Count,
+            PendingPayments = payments.Count(p => p.Status == "pending"),
+            NextDueDate = settings?.NextDueDate ?? DateTime.Today.AddDays(30),
+            ProjectedFinalAmount = totalContrib + (avgAmount * monthsRemaining),
+            LastPaymentAmount = lastAmount,
+            AveragePaymentAmount = avgAmount,
+            MonthsRemaining = monthsRemaining,
+            GroupName = settings?.GroupName ?? "Stokvel"
+        };
     }
 
     // ───────────────── PAYMENT HISTORY ─────────────────
     public async Task<List<Payment>> GetPaymentHistoryAsync(
-        string memberId,
+        string userId,
         DateTime? from = null, DateTime? to = null)
     {
-        var queries = new List<string>
-                      {
-                          Query.Equal("memberId", memberId),
-                          Query.OrderDesc("paymentDate")
-                      };
+        var queries = new List<string> { Query.Equal("userId", userId), Query.OrderDesc("paymentDate") };
 
         if (from.HasValue)
             queries.Add(Query.GreaterThanEqual("paymentDate", from.Value.ToString("o")));

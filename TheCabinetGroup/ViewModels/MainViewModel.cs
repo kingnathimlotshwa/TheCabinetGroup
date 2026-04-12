@@ -34,8 +34,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] public string _memberRole = string.Empty;
     [ObservableProperty] public bool _isAdmin = false;
 
-    // NEW: ProfileViewModel exposed so MainView can bind to it
+    // ── PAGES ─────────────────────────────────────────────────────────
     [ObservableProperty] private UserProfileViewModel _profileVm = null!;
+    [ObservableProperty] private PaymentViewModel _paymentVm = null!;
 
     public event Action? LogoutRequested;
 
@@ -54,6 +55,10 @@ public partial class MainViewModel : ViewModelBase
         // NEW: initialise the ProfileViewModel (shares the same ToastManager)
         ProfileVm = new UserProfileViewModel(appwrite, toastManager);
         ProfileVm.LogoutRequested += OnLogoutRequested;
+
+
+        // CHANGED: Initialise ContributionViewModel so the Contributions tab is ready
+        PaymentVm = new PaymentViewModel(appwrite, toastManager);
     }
 
     // Design-time constructor
@@ -115,6 +120,10 @@ public partial class MainViewModel : ViewModelBase
         if (ProfileVm is not null)
             ProfileVm.SetUser(user);
 
+        // CHANGED: Populate the Contributions tab with the authenticated user's data
+        if (PaymentVm is not null)
+            PaymentVm.SetUser(user);
+
         if (DialogHost.IsDialogOpen(LoginDialogId))
             DialogHost.Close(LoginDialogId, user);
     }
@@ -133,6 +142,9 @@ public partial class MainViewModel : ViewModelBase
         // Also re-subscribe the logout handler on the new instance.
         ProfileVm = new UserProfileViewModel(_appwrite, _toastManager);
         ProfileVm.LogoutRequested += OnLogoutRequested;
+
+        // CHANGED: Re-create ContributionVm on logout so stale data is cleared
+        PaymentVm = new PaymentViewModel(_appwrite, _toastManager);
 
         var loginPage = new LoginPage { DataContext = _authVm };
         _ = DialogHost.Show(loginPage, LoginDialogId);

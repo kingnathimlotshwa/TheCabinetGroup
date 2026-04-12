@@ -1,0 +1,385 @@
+<UserControl
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:Class="TheCabinetGroup.Views.PaymentPage"
+    x:DataType="vm:PaymentViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:conv="clr-namespace:TheCabinetGroup.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadUi="clr-namespace:ShadUI;assembly=ShadUI"
+    xmlns:vm="clr-namespace:TheCabinetGroup.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--  CHANGED: Design-time DataContext wired up so the designer renders correctly.  -->
+    <Design.DataContext>
+        <vm:PaymentViewModel />
+    </Design.DataContext>
+
+    <Panel>
+        <ScrollViewer
+            HorizontalAlignment="Center"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,12" Spacing="16">
+
+                <!--
+                    ══════════════════════════════════════════════════════════
+                    SECTION SWITCHER  (Overview | Submit | History)
+                    CHANGED: Three-button tab strip added.
+                    ══════════════════════════════════════════════════════════
+                -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <ToggleButton
+                        Classes="Outline"
+                        Command="{Binding ShowOverviewCommand}"
+                        Content="Overview"
+                        IsChecked="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Overview}" />
+                    <ToggleButton
+                        Classes="Outline"
+                        Command="{Binding ShowSubmitCommand}"
+                        Content="Submit Payment"
+                        IsChecked="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Submit}" />
+                    <ToggleButton
+                        Classes="Outline"
+                        Command="{Binding ShowHistoryCommand}"
+                        Content="History"
+                        IsChecked="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=History}" />
+                </StackPanel>
+
+                <!--  ── Error banner ────────────────────────────────────────────  -->
+                <shadUi:Card Background="{DynamicResource DestructiveColor}" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock
+                        Foreground="White"
+                        Text="{Binding ErrorMessage}"
+                        TextWrapping="Wrap" />
+                </shadUi:Card>
+
+                <!--
+                    ══════════════════════════════════════════════════════════
+                    OVERVIEW SECTION
+                    CHANGED: Summary stats cards + pending payments list added.
+                    ══════════════════════════════════════════════════════════
+                -->
+                <StackPanel IsVisible="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Overview}" Spacing="12">
+
+                    <!--  Summary stat cards in a 2×2 grid  -->
+                    <Grid
+                        ColumnDefinitions="*,*"
+                        HorizontalAlignment="Stretch"
+                        RowDefinitions="Auto,Auto">
+
+                        <!--  Total Contributed  -->
+                        <!--  CHANGED: Summary card for total amount contributed.  -->
+                        <shadUi:Card
+                            Grid.Column="0"
+                            Grid.Row="0"
+                            HasShadow="True"
+                            Margin="0,0,6,6">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <LucideIcon Kind="TrendingUp" Size="16" />
+                                    <TextBlock Classes="Muted" Text="Total Contributed" />
+                                </StackPanel>
+                                <TextBlock Classes="h3" Text="{Binding TotalContributed, StringFormat='R {0:N2}'}" />
+                            </StackPanel>
+                        </shadUi:Card>
+
+                        <!--  Outstanding Penalties  -->
+                        <!--  CHANGED: Summary card for outstanding penalties.  -->
+                        <shadUi:Card
+                            Grid.Column="1"
+                            Grid.Row="0"
+                            HasShadow="True"
+                            Margin="6,0,0,6">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <LucideIcon Kind="TriangleAlert" Size="16" />
+                                    <TextBlock Classes="Muted" Text="Outstanding Penalties" />
+                                </StackPanel>
+                                <TextBlock Classes="h3" Text="{Binding OutstandingPenalties, StringFormat='R {0:N2}'}" />
+                            </StackPanel>
+                        </shadUi:Card>
+
+                        <!--  Next Due Date  -->
+                        <!--  CHANGED: Summary card for next payment due date.  -->
+                        <shadUi:Card
+                            Grid.Column="0"
+                            Grid.Row="1"
+                            HasShadow="True"
+                            Margin="0,0,6,0">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <LucideIcon Kind="Calendar" Size="16" />
+                                    <TextBlock Classes="Muted" Text="Next Due Date" />
+                                </StackPanel>
+                                <TextBlock Classes="h3" Text="{Binding NextDueDate, StringFormat='{}{0:dd MMM yyyy}'}" />
+                            </StackPanel>
+                        </shadUi:Card>
+
+                        <!--  Monthly Contribution  -->
+                        <!--  CHANGED: Summary card for the configured monthly amount.  -->
+                        <shadUi:Card
+                            Grid.Column="1"
+                            Grid.Row="1"
+                            HasShadow="True"
+                            Margin="6,0,0,0">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <LucideIcon Kind="Wallet" Size="16" />
+                                    <TextBlock Classes="Muted" Text="Monthly Amount" />
+                                </StackPanel>
+                                <TextBlock Classes="h3" Text="{Binding MonthlyContributionAmount, StringFormat='R {0:N2}'}" />
+                            </StackPanel>
+                        </shadUi:Card>
+                    </Grid>
+
+                    <!--  Refresh button  -->
+                    <!--  CHANGED: Manual refresh added so members can pull latest data.  -->
+                    <Button
+                        Classes="Outline"
+                        Command="{Binding LoadCommand}"
+                        HorizontalAlignment="Right"
+                        IsEnabled="{Binding !IsBusy}"
+                        shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <LucideIcon Kind="RefreshCw" Size="14" />
+                            <TextBlock Text="Refresh" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Pending payments card  -->
+                    <!--  CHANGED: Pending payments list card added.  -->
+                    <shadUi:Card HasShadow="True">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="h3" Text="Pending Payments" />
+                            <Separator />
+
+                            <!--  Empty state  -->
+                            <TextBlock
+                                Classes="Muted"
+                                IsVisible="{Binding PendingPayments.Count, Converter={x:Static ObjectConverters.IsNull}}"
+                                Text="No pending payments." />
+
+                            <ItemsControl ItemsSource="{Binding PendingPayments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            BorderBrush="{DynamicResource BorderColor}"
+                                            BorderThickness="0,0,0,1"
+                                            Padding="0,8">
+                                            <Grid ColumnDefinitions="*, Auto">
+                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Amount, StringFormat='R {0:N2}'}" />
+                                                    <TextBlock
+                                                        Classes="Muted"
+                                                        FontSize="12"
+                                                        Text="{Binding PaymentDate, StringFormat='{}{0:dd MMM yyyy}'}" />
+                                                </StackPanel>
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    Text="{Binding StatusDisplay}"
+                                                    VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </shadUi:Card>
+                </StackPanel>
+
+                <!--
+                    ══════════════════════════════════════════════════════════
+                    SUBMIT PAYMENT SECTION
+                    CHANGED: File picker moved above the Submit button so proof
+                    is uploaded and attached in a single submission step.
+                    The post-submission fallback upload remains for payments
+                    that were submitted without proof.
+                    ══════════════════════════════════════════════════════════
+                -->
+                <shadUi:Card HasShadow="True" IsVisible="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=Submit}">
+                    <StackPanel Spacing="14">
+
+                        <TextBlock Classes="h3" Text="Submit a Payment" />
+                        <Separator />
+
+                        <!--  Amount field  -->
+                        <TextBox
+                            Text="{Binding PaymentAmount, Mode=TwoWay}"
+                            Watermark="e.g. 500"
+                            shadUi:ControlAssist.Label="Amount (ZAR)" />
+
+                        <!--  Notes field  -->
+                        <TextBox
+                            AcceptsReturn="True"
+                            Height="80"
+                            Text="{Binding PaymentNotes, Mode=TwoWay}"
+                            TextWrapping="Wrap"
+                            Watermark="Optional — e.g. EFT ref #12345"
+                            shadUi:ControlAssist.Label="Notes" />
+
+                        <!--
+                            CHANGED: Proof of payment picker now sits above the Submit
+                            button. Selecting a file here means it will be uploaded and
+                            linked to the payment in one step when Submit is tapped.
+                        -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="Muted" Text="Proof of Payment (optional)" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button
+                                    Classes="Outline"
+                                    Command="{Binding PickFileCommand}"
+                                    Content="Choose File"
+                                    IsEnabled="{Binding !IsBusy}" />
+                                <TextBlock
+                                    IsVisible="{Binding HasSelectedFile}"
+                                    Text="{Binding SelectedFileName}"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Classes="Muted"
+                                    IsVisible="{Binding !HasSelectedFile}"
+                                    Text="No file selected"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!--  Submit button — uploads proof (if selected) then creates the payment row  -->
+                        <Button
+                            Classes="Primary"
+                            Command="{Binding SubmitPaymentCommand}"
+                            Content="Submit Payment"
+                            HorizontalAlignment="Left"
+                            IsEnabled="{Binding !IsBusy}"
+                            shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}" />
+
+                        <!--
+                            CHANGED: Fallback upload section — only shown when a payment was
+                            submitted without proof. Lets the member attach it afterwards.
+                        -->
+                        <StackPanel IsVisible="{Binding LastSubmittedPayment, Converter={x:Static ObjectConverters.IsNotNull}}" Spacing="10">
+                            <Separator />
+                            <TextBlock Classes="h4" Text="Attach Proof to Previous Payment" />
+                            <TextBlock
+                                Classes="Muted"
+                                Text="Your payment was submitted without proof. You can still attach a screenshot or PDF below."
+                                TextWrapping="Wrap" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button
+                                    Classes="Outline"
+                                    Command="{Binding PickFileCommand}"
+                                    Content="Choose File"
+                                    IsEnabled="{Binding !IsBusy}" />
+                                <TextBlock
+                                    IsVisible="{Binding HasSelectedFile}"
+                                    Text="{Binding SelectedFileName}"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Classes="Muted"
+                                    IsVisible="{Binding !HasSelectedFile}"
+                                    Text="No file selected"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <Button
+                                Classes="Primary"
+                                Command="{Binding UploadProofCommand}"
+                                Content="Upload Proof"
+                                HorizontalAlignment="Left"
+                                IsEnabled="{Binding HasSelectedFile}"
+                                shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}" />
+                        </StackPanel>
+
+                    </StackPanel>
+                </shadUi:Card>
+
+                <!--
+                    ══════════════════════════════════════════════════════════
+                    HISTORY SECTION
+                    CHANGED: Full payment history list with status badges added.
+                    ══════════════════════════════════════════════════════════
+                -->
+                <shadUi:Card HasShadow="True" IsVisible="{Binding ActiveSection, Converter={x:Static conv:StringEqualityConverter.Instance}, ConverterParameter=History}">
+                    <StackPanel Spacing="12">
+
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock
+                                Classes="h3"
+                                Grid.Column="0"
+                                Text="Payment History" />
+                            <Button
+                                Classes="Ghost"
+                                Command="{Binding LoadCommand}"
+                                Grid.Column="1"
+                                IsEnabled="{Binding !IsBusy}"
+                                shadUi:ButtonAssist.ShowProgress="{Binding IsBusy}">
+                                <LucideIcon Kind="RefreshCw" Size="14" />
+                            </Button>
+                        </Grid>
+
+                        <Separator />
+
+                        <!--  Empty state  -->
+                        <!--  CHANGED: Empty-state message when no history exists.  -->
+                        <TextBlock
+                            Classes="Muted"
+                            IsVisible="{Binding PaymentHistory.Count, Converter={x:Static ObjectConverters.IsNull}}"
+                            Text="No payment history found." />
+
+                        <!--  History list  -->
+                        <ItemsControl ItemsSource="{Binding PaymentHistory}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!--  CHANGED: Each row shows amount, date, notes and status badge.  -->
+                                    <Border
+                                        BorderBrush="{DynamicResource BorderColor}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="0,10">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <StackPanel Grid.Column="0" Spacing="3">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding Amount, StringFormat='R {0:N2}'}" />
+                                                <TextBlock
+                                                    Classes="Muted"
+                                                    FontSize="12"
+                                                    Text="{Binding PaymentDate, StringFormat='{}{0:dd MMM yyyy}'}" />
+                                                <TextBlock
+                                                    Classes="Muted"
+                                                    FontSize="11"
+                                                    IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                    Text="{Binding Notes}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <StackPanel
+                                                Grid.Column="1"
+                                                Spacing="4"
+                                                VerticalAlignment="Center">
+                                                <TextBlock
+                                                    FontSize="13"
+                                                    HorizontalAlignment="Right"
+                                                    Text="{Binding StatusDisplay}" />
+                                                <!--  Proof indicator  -->
+                                                <LucideIcon
+                                                    HorizontalAlignment="Right"
+                                                    IsVisible="{Binding HasProof}"
+                                                    Kind="Paperclip"
+                                                    Size="13" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </StackPanel>
+                </shadUi:Card>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+
+</UserControl>
+
