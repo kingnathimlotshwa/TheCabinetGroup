@@ -55,7 +55,7 @@ public interface IAppwriteService
     Task<string> UploadProofOfPaymentAsync(string paymentId, string userId,
                                            Stream fileStream, string fileName);
 
-    Task<string> UploadFileOnlyAsync(Stream fileStream, string fileName);
+    Task<string> UploadFileOnlyAsync(Stream fileStream, string userId, string fileName);
     Task<string> GetProofOfPaymentUrlAsync(string fileId);
     Task<List<Payment>> GetMyPaymentsAsync(string userId);
     Task<List<Payment>> GetPaymentsByStatusAsync(string userId, string status);

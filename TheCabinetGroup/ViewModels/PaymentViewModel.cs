@@ -169,6 +169,7 @@ public partial class PaymentViewModel : ViewModelBase
             {
                 proofFileId = await _appwrite.UploadFileOnlyAsync(
                     fileStream: _selectedFileStream,
+                    userId:  _currentUser.Id,
                     fileName: _selectedFileNameRaw);
 
                 ClearFileSelection();
@@ -179,7 +180,7 @@ public partial class PaymentViewModel : ViewModelBase
                 amount: amount,
                 proofFileId: proofFileId,
                 period: null,
-                notes: PaymentNotes.Trim());
+                notes: PaymentNotes.Trim(), isPenaltyPayment: false);
 
             LastSubmittedPayment = payment;
 

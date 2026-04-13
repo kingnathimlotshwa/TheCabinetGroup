@@ -259,12 +259,9 @@ public class AppwriteService : IAppwriteService
                 ["status"] = "pending",
                 ["notes"] = notes ?? string.Empty
             },
-            permissions: new List<string>
-            {
-                Permission.Read(Role.User(CurrentUserId!)),
-                Permission.Read(Role.Team("admins")),
-                Permission.Update(Role.Team("admins"))
-            });
+            permissions:
+            [
+            ]);
 
         return FromRow<Payment>(doc);
     }
@@ -277,12 +274,7 @@ public class AppwriteService : IAppwriteService
             bucketId: _config.BucketId,
             fileId: ID.Unique(),
             file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
-            permissions: new List<string>
-            {
-                // CHANGED: Role.User(id) is not permitted by this bucket's ACL.
-                // Using Role.Users() (any authenticated user) and admins team instead.
-                Permission.Read(Role.Users()),
-                Permission.Read(Role.Team("admins"))});
+            permissions: []);
 
         await _databases.UpdateRow(
             databaseId: _config.DatabaseId,
@@ -296,19 +288,12 @@ public class AppwriteService : IAppwriteService
     // CHANGED: Uploads a file to storage without requiring a paymentId.
     // Used to obtain a fileId before calling SubmitPaymentAsync,
     // so proof of payment is attached at creation rather than in a second step.
-    public async Task<string> UploadFileOnlyAsync(Stream fileStream, string fileName)
+    public async Task<string> UploadFileOnlyAsync(Stream fileStream, string userId, string fileName)
     {
         var file = await _storage.CreateFile(
             bucketId: _config.BucketId,
             fileId: ID.Unique(),
-            file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()),
-            permissions: new List<string>
-            {
-                // CHANGED: Role.User(id) is not permitted by this bucket's ACL.
-                // Using Role.Users() (any authenticated user) and admins team instead.
-                Permission.Read(Role.Users()),
-                Permission.Read(Role.Team("admins"))
-            });
+            file: InputFile.FromStream(fileStream, fileName, fileName.GetMimeType()), permissions: []);
 
         return file.Id;
     }
