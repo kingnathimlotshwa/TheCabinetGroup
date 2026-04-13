@@ -6,16 +6,14 @@
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<!-- This GUID ties the project to its user secrets store -->
 		<UserSecretsId>stokvel-app-secrets-001</UserSecretsId>
-		<Version>1.0.10</Version>
+		<Version>1.0.11</Version>
 		<Title>The Cabinet Group</Title>
 		<Authors>Nkosinathi Mlotshwa</Authors>
 		<Description>Stokvel App</Description>
 		<PackageProjectUrl>https://github.com/kingnathimlotshwa/TheCabinetGroup</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/kingnathimlotshwa/TheCabinetGroup.git</RepositoryUrl>
-		<PackageTags>v1.0.10</PackageTags>
-		<PackageReleaseNotes>Fixed:
-https://github.com/kingnathimlotshwa/TheCabinetGroup/issues/5
-https://github.com/kingnathimlotshwa/TheCabinetGroup/issues/6</PackageReleaseNotes>
+		<PackageTags>v1.0.11</PackageTags>
+		<PackageReleaseNotes></PackageReleaseNotes>
 	</PropertyGroup>
 	
 	<ItemGroup>
